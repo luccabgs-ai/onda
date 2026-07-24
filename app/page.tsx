@@ -43,7 +43,7 @@ export default function Home() {
   }, [hour]);
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
+    <div className="app-shell" style={{ display: 'flex', height: '100vh' }}>
       {erroConexao && (
         <div style={{
           position: 'fixed',
@@ -84,7 +84,7 @@ export default function Home() {
       <main
         style={{
           flex: 1,
-          height: '100vh',
+          minHeight: 0,
           overflow: screen === 'companheira' ? 'hidden' : 'auto',
         }}
         className="washi-bg"
