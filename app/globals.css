@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&family=Noto+Serif+JP:wght@400;500;600&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  --ink:        #1B365D;
+  --ink-deep:   #14264A;
+  --ink-soft:   #3E6B94;
+  --ink-mist:   #7E9CB8;
+  --ink-fade:   #B7C7D6;
+  --washi:      #F5EFE0;
+  --washi-warm: #EFE6D2;
+  --washi-deep: #E5D9BE;
+  --char:       #2A2A2A;
+  --char-soft:  #5A5650;
+  --char-mute:  #8A8478;
+  --hanko:      #C5483A;
+  --hanko-deep: #A23A2E;
+  --sand:       #D4B896;
+  --moss:       #6E7F5A;
+  --foam:       #F8F4E7;
+
+  /* component tokens */
+  --card-bg:      rgba(255, 255, 255, 0.55);
+  --card-border:  rgba(27, 54, 93, 0.10);
+  --sidebar-bg:   rgba(245, 239, 224, 0.50);
+}
+
+/* ── Noite aconchegante ─────────────────────────────────────────────────────── */
+html[data-night="true"] {
+  --ink:        #9DC4E0;
+  --ink-deep:   #7AAAC8;
+  --ink-soft:   #7AAAC8;
+  --ink-mist:   #5A8AAA;
+  --ink-fade:   #3A607A;
+  --washi:      #1A1208;
+  --washi-warm: #221608;
+  --washi-deep: #120C04;
+  --char:       #D4C4A0;
+  --char-soft:  #A89060;
+  --char-mute:  #786848;
+  --hanko:      #D86858;
+  --hanko-deep: #C05040;
+  --sand:       #C8A870;
+  --moss:       #88A060;
+  --foam:       #221A10;
+
+  --card-bg:     rgba(255, 200, 100, 0.04);
+  --card-border: rgba(200, 160, 80, 0.12);
+  --sidebar-bg:  rgba(15, 10, 4, 0.60);
+}
+
+/* ── Transição suave entre modos ────────────────────────────────────────────── */
+body,
+main,
+aside,
+.washi-bg {
+  transition:
+    background-color 0.5s ease,
+    background-image 0.5s ease;
+}
+
+* {
+  transition:
+    color 0.35s ease,
+    border-color 0.35s ease,
+    background-color 0.35s ease;
+}
+
+/* reset transitions em elementos interativos para não atrasar hover/click */
+button, a, input, textarea {
+  transition:
+    color 0.35s ease,
+    border-color 0.35s ease,
+    background-color 0.2s ease,
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--washi);
+  color: var(--char);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+.washi-bg {
+  background-color: var(--washi);
+  background-image:
+    radial-gradient(rgba(120,100,60,0.035) 1px, transparent 1px),
+    radial-gradient(rgba(120,100,60,0.025) 1px, transparent 1px);
+  background-size: 3px 3px, 7px 7px;
+  background-position: 0 0, 1px 2px;
+}
+
+html[data-night="true"] .washi-bg {
+  background-color: var(--washi);
+  background-image:
+    radial-gradient(rgba(200, 150, 80, 0.04) 1px, transparent 1px),
+    radial-gradient(rgba(200, 150, 80, 0.025) 1px, transparent 1px);
+  background-size: 3px 3px, 7px 7px;
+  background-position: 0 0, 1px 2px;
+}
+
+html[data-night="true"] ::-webkit-scrollbar-thumb {
+  background: rgba(200, 160, 80, 0.20);
+}
+
+.serif { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; }
+.jp    { font-family: 'Noto Serif JP', serif; }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(27,54,93,0.18); border-radius: 4px; }
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea { font-family: inherit; color: inherit; }
+input:focus, textarea:focus { outline: none; }
+
+.brush-divider {
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%, rgba(27,54,93,0.04) 8%, rgba(27,54,93,0.18) 28%,
+    rgba(27,54,93,0.28) 50%, rgba(27,54,93,0.18) 72%,
+    rgba(27,54,93,0.04) 92%, transparent 100%);
+}
+
+html[data-night="true"] .brush-divider {
+  background: linear-gradient(90deg,
+    transparent 0%, rgba(200,160,80,0.04) 8%, rgba(200,160,80,0.18) 28%,
+    rgba(200,160,80,0.28) 50%, rgba(200,160,80,0.18) 72%,
+    rgba(200,160,80,0.04) 92%, transparent 100%);
+}
+
+@keyframes ripple { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.4); opacity: 0; } }
+@keyframes drift  { 0% { transform: translateY(0); } 50% { transform: translateY(-3px); } 100% { transform: translateY(0); } }
+@keyframes pulse  { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
