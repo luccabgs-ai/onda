@@ -1,7 +1,7 @@
 'use client';
-import React, { useState } from 'react';
+import React from 'react';
 import { Hanko } from './ui/Hanko';
-import { IcSun, IcMoon, IcCompass, IcLeaf, IcChat, IcKanban, IcCalendar2, IcHabito, IcTimer, IcTarget, IcMenu, IcClose } from './ui/icons';
+import { IcSun, IcMoon, IcCompass, IcLeaf, IcChat, IcKanban, IcCalendar2, IcHabito, IcTimer, IcTarget } from './ui/icons';
 
 interface NavItem {
   id: string;
@@ -66,40 +66,20 @@ const WaveSVG = () => (
 );
 
 export default function Sidebar({ active, onChange, didCheckIn, isNight, onToggleNight }: SidebarProps) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const irPara = (id: string) => {
-    onChange(id);
-    setMobileOpen(false);
-  };
-
   return (
-    <>
-      {/* Barra estreita visível só no celular — abre a gaveta com o menu completo */}
-      <div className="mobile-topbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Hanko size={26} label="波" />
-          <span className="serif" style={{ fontSize: 15, color: 'var(--ink)' }}>Onda</span>
-        </div>
-        <button onClick={() => setMobileOpen(true)} aria-label="Abrir menu" style={{ padding: 6 }}>
-          <IcMenu size={20} stroke="var(--ink)" />
-        </button>
-      </div>
-
-      <div
-        className={`sidebar-backdrop${mobileOpen ? ' is-open' : ''}`}
-        onClick={() => setMobileOpen(false)}
-      />
-
-      <aside className={`sidebar${mobileOpen ? ' is-open' : ''}`}>
-        <button
-          onClick={() => setMobileOpen(false)}
-          aria-label="Fechar menu"
-          className="sidebar-close"
-        >
-          <IcClose size={18} stroke="var(--char-soft)" />
-        </button>
-
+    <aside
+      style={{
+        width: 240,
+        minWidth: 240,
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--sidebar-bg)',
+        borderRight: '1px solid var(--card-border)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
       {/* Logo */}
       <div style={{ padding: '28px 24px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
         <Hanko size={36} label="波" />
@@ -130,7 +110,7 @@ export default function Sidebar({ active, onChange, didCheckIn, isNight, onToggl
           return (
             <button
               key={item.id}
-              onClick={() => irPara(item.id)}
+              onClick={() => onChange(item.id)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -237,8 +217,7 @@ export default function Sidebar({ active, onChange, didCheckIn, isNight, onToggl
         </button>
       </div>
 
-        <WaveSVG />
-      </aside>
-    </>
+      <WaveSVG />
+    </aside>
   );
 }

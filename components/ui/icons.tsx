@@ -97,14 +97,6 @@ export const IcClose = ({ size = 16, stroke = 'currentColor', sw = 1.5 }: IconPr
   </svg>
 );
 
-export const IcMenu = ({ size = 16, stroke = 'currentColor', sw = 1.5 }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
-    <line x1="4" y1="7" x2="20" y2="7" />
-    <line x1="4" y1="12" x2="20" y2="12" />
-    <line x1="4" y1="17" x2="20" y2="17" />
-  </svg>
-);
-
 export const IcSend = ({ size = 16, stroke = 'currentColor', sw = 1.5 }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
     <line x1="22" y1="2" x2="11" y2="13" />
