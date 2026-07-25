@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { Meta, MetaRastreio, Objetivo, ObjetivoStatus } from './types';
 import { useRetryFetch } from './useRetryFetch';
-import { gravar } from './gravacao';
+import { gravar, jsonComNulos } from './gravacao';
 
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -16,7 +16,7 @@ const patchMeta = (id: string, data: Record<string, unknown>) => {
   gravar(`/api/metas/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: jsonComNulos(data),
   });
 };
 
@@ -52,7 +52,7 @@ export function useObjetivosStore() {
     gravar('/api/objetivos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(o),
+      body: jsonComNulos(o),
     });
   }, []);
 
@@ -61,7 +61,7 @@ export function useObjetivosStore() {
     gravar(`/api/objetivos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: jsonComNulos(data),
     });
   }, []);
 
@@ -70,7 +70,7 @@ export function useObjetivosStore() {
     gravar(`/api/objetivos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
+      body: jsonComNulos({ status }),
     });
   }, []);
 
@@ -109,7 +109,7 @@ export function useObjetivosStore() {
     gravar('/api/metas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(m),
+      body: jsonComNulos(m),
     });
   }, []);
 

@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { PrioridadeManual } from './types';
 import { useRetryFetch } from './useRetryFetch';
-import { gravar } from './gravacao';
+import { gravar, jsonComNulos } from './gravacao';
 
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -36,7 +36,7 @@ export function usePrioridadesStore() {
     gravar('/api/prioridades', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(p),
+      body: jsonComNulos(p),
     });
   }, []);
 
@@ -51,7 +51,7 @@ export function usePrioridadesStore() {
     gravar(`/api/prioridades/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ done }),
+      body: jsonComNulos({ done }),
     });
   }, [manuais]);
 
@@ -60,7 +60,7 @@ export function usePrioridadesStore() {
     gravar(`/api/prioridades/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: jsonComNulos(data),
     });
   }, []);
 

@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { CalendarEvent } from './types';
 import { useRetryFetch } from './useRetryFetch';
-import { gravar } from './gravacao';
+import { gravar, jsonComNulos } from './gravacao';
 
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -29,7 +29,7 @@ export function useCalendarStore() {
     gravar('/api/calendario', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(e),
+      body: jsonComNulos(e),
     });
   }, []);
 
@@ -38,7 +38,7 @@ export function useCalendarStore() {
     gravar(`/api/calendario/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: jsonComNulos(data),
     });
   }, []);
 

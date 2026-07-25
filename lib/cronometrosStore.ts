@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { CronometroFase, CronometroPreset } from './types';
 import { useRetryFetch } from './useRetryFetch';
-import { gravar } from './gravacao';
+import { gravar, jsonComNulos } from './gravacao';
 
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -61,7 +61,7 @@ export function useCronometrosStore() {
           fetch('/api/cronometros', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(p),
+            body: jsonComNulos(p),
           })
         ));
         setPresets([...data, ...faltando]);
@@ -89,7 +89,7 @@ export function useCronometrosStore() {
     gravar('/api/cronometros', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(p),
+      body: jsonComNulos(p),
     });
   }, []);
 
@@ -98,7 +98,7 @@ export function useCronometrosStore() {
     gravar(`/api/cronometros/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: jsonComNulos(data),
     });
   }, []);
 

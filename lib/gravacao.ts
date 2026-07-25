@@ -20,6 +20,14 @@ export function gravar(url: string, init?: RequestInit) {
     .catch(() => { falhas++; emitir(); });
 }
 
+/**
+ * JSON.stringify que preserva chaves com valor `undefined` como `null`. Limpar um campo
+ * opcional precisa chegar na API como null explícito — o stringify padrão descarta a
+ * chave inteira e o valor antigo fica intacto no banco, voltando no próximo reload.
+ */
+export const jsonComNulos = (data: unknown) =>
+  JSON.stringify(data, (_k, v) => (v === undefined ? null : v));
+
 export function limparFalhasDeGravacao() {
   falhas = 0;
   emitir();

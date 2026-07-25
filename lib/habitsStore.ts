@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import { AncoraTipo, Habito } from './types';
 import { toDateStr } from './nutricao';
 import { useRetryFetch } from './useRetryFetch';
-import { gravar } from './gravacao';
+import { gravar, jsonComNulos } from './gravacao';
 
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -69,7 +69,7 @@ export function useHabitsStore() {
     gravar('/api/habitos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(h),
+      body: jsonComNulos(h),
     });
   }, []);
 
@@ -78,7 +78,7 @@ export function useHabitsStore() {
     gravar(`/api/habitos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: jsonComNulos(data),
     });
   }, []);
 
@@ -102,7 +102,7 @@ export function useHabitsStore() {
     gravar(`/api/habitos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ votos }),
+      body: jsonComNulos({ votos }),
     });
   }, [habitos]);
 
@@ -114,7 +114,7 @@ export function useHabitsStore() {
     gravar(`/api/habitos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ metaAtual: novaMeta, encolhimentoDismissadoEm: null }),
+      body: jsonComNulos({ metaAtual: novaMeta, encolhimentoDismissadoEm: null }),
     });
   }, []);
 
@@ -126,7 +126,7 @@ export function useHabitsStore() {
     gravar(`/api/habitos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encolhimentoDismissadoEm: dateStr }),
+      body: jsonComNulos({ encolhimentoDismissadoEm: dateStr }),
     });
   }, []);
 

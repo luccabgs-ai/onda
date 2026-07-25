@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { Project, Task, TaskStatus, ChecklistItem } from './types';
 import { useRetryFetch } from './useRetryFetch';
-import { gravar } from './gravacao';
+import { gravar, jsonComNulos } from './gravacao';
 
 interface StoreState {
   projects: Project[];
@@ -24,7 +24,7 @@ const patchTask = (taskId: string, data: Record<string, unknown>) => {
   gravar(`/api/tasks/${taskId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: jsonComNulos(data),
   });
 };
 
@@ -51,7 +51,7 @@ export function useProjectsStore() {
     gravar('/api/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(p),
+      body: jsonComNulos(p),
     });
   }, []);
 
@@ -60,7 +60,7 @@ export function useProjectsStore() {
     gravar(`/api/projects/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: jsonComNulos(data),
     });
   }, []);
 
@@ -76,7 +76,7 @@ export function useProjectsStore() {
     gravar('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(t),
+      body: jsonComNulos(t),
     });
   }, []);
 
