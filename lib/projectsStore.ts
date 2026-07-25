@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { Project, Task, TaskStatus, ChecklistItem } from './types';
 import { useRetryFetch } from './useRetryFetch';
+import { gravar } from './gravacao';
 
 interface StoreState {
   projects: Project[];
@@ -20,11 +21,11 @@ function midpointOrder(before: number | undefined, after: number | undefined): n
 }
 
 const patchTask = (taskId: string, data: Record<string, unknown>) => {
-  fetch(`/api/tasks/${taskId}`, {
+  gravar(`/api/tasks/${taskId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  }).catch(() => {});
+  });
 };
 
 export function useProjectsStore() {
@@ -47,36 +48,36 @@ export function useProjectsStore() {
   const createProject = useCallback((data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
     const p: Project = { ...data, id: uid(), createdAt: now(), updatedAt: now() };
     setState(s => ({ ...s, projects: [...s.projects, p] }));
-    fetch('/api/projects', {
+    gravar('/api/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(p),
-    }).catch(() => {});
+    });
   }, []);
 
   const updateProject = useCallback((id: string, data: Partial<Omit<Project, 'id' | 'createdAt'>>) => {
     setState(s => ({ ...s, projects: s.projects.map(p => p.id === id ? { ...p, ...data, updatedAt: now() } : p) }));
-    fetch(`/api/projects/${id}`, {
+    gravar(`/api/projects/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).catch(() => {});
+    });
   }, []);
 
   const deleteProject = useCallback((id: string) => {
     setState(s => ({ projects: s.projects.filter(p => p.id !== id), tasks: s.tasks.filter(t => t.projectId !== id) }));
     // apaga o projeto — as tasks somem juntas por causa do ON DELETE CASCADE no banco
-    fetch(`/api/projects/${id}`, { method: 'DELETE' }).catch(() => {});
+    gravar(`/api/projects/${id}`, { method: 'DELETE' });
   }, []);
 
   const createTask = useCallback((projectId: string, data: Omit<Task, 'id' | 'projectId' | 'order' | 'createdAt' | 'updatedAt'>) => {
     const t: Task = { ...data, id: uid(), projectId, order: Date.now(), createdAt: now(), updatedAt: now() };
     setState(s => ({ ...s, tasks: [...s.tasks, t] }));
-    fetch('/api/tasks', {
+    gravar('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(t),
-    }).catch(() => {});
+    });
   }, []);
 
   const updateTask = useCallback((taskId: string, data: Partial<Omit<Task, 'id' | 'projectId' | 'createdAt'>>) => {
@@ -86,7 +87,7 @@ export function useProjectsStore() {
 
   const deleteTask = useCallback((taskId: string) => {
     setState(s => ({ ...s, tasks: s.tasks.filter(t => t.id !== taskId) }));
-    fetch(`/api/tasks/${taskId}`, { method: 'DELETE' }).catch(() => {});
+    gravar(`/api/tasks/${taskId}`, { method: 'DELETE' });
   }, []);
 
   /** Muda o status e joga a task pro fim da nova coluna — usado pelos atalhos ←/→ que não têm posição de destino. */

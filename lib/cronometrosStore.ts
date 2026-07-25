@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { CronometroFase, CronometroPreset } from './types';
 import { useRetryFetch } from './useRetryFetch';
+import { gravar } from './gravacao';
 
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -85,25 +86,25 @@ export function useCronometrosStore() {
       atualizadoEm: now(),
     };
     setPresets(prev => [...prev, p]);
-    fetch('/api/cronometros', {
+    gravar('/api/cronometros', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(p),
-    }).catch(() => {});
+    });
   }, []);
 
   const updatePreset = useCallback((id: string, data: Partial<Omit<CronometroPreset, 'id' | 'pronto' | 'criadoEm'>>) => {
     setPresets(prev => prev.map(p => p.id === id ? { ...p, ...data, atualizadoEm: now() } : p));
-    fetch(`/api/cronometros/${id}`, {
+    gravar(`/api/cronometros/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).catch(() => {});
+    });
   }, []);
 
   const deletePreset = useCallback((id: string) => {
     setPresets(prev => prev.filter(p => p.id !== id));
-    fetch(`/api/cronometros/${id}`, { method: 'DELETE' }).catch(() => {});
+    gravar(`/api/cronometros/${id}`, { method: 'DELETE' });
   }, []);
 
   return { presets, loaded, erro, createPreset, updatePreset, deletePreset };

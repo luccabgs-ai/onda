@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { PrioridadeManual } from './types';
 import { useRetryFetch } from './useRetryFetch';
+import { gravar } from './gravacao';
 
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -32,11 +33,11 @@ export function usePrioridadesStore() {
       createdAt: now(),
     };
     setManuais(prev => [...prev, p]);
-    fetch('/api/prioridades', {
+    gravar('/api/prioridades', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(p),
-    }).catch(() => {});
+    });
   }, []);
 
   // Lê o valor atual de `manuais` (não de dentro do updater do setState) antes de decidir o
@@ -47,25 +48,25 @@ export function usePrioridadesStore() {
     if (!atual) return;
     const done = !atual.done;
     setManuais(prev => prev.map(p => p.id === id ? { ...p, done } : p));
-    fetch(`/api/prioridades/${id}`, {
+    gravar(`/api/prioridades/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ done }),
-    }).catch(() => {});
+    });
   }, [manuais]);
 
   const updateManual = useCallback((id: string, data: Partial<Pick<PrioridadeManual, 'text' | 'areaId'>>) => {
     setManuais(prev => prev.map(p => p.id === id ? { ...p, ...data } : p));
-    fetch(`/api/prioridades/${id}`, {
+    gravar(`/api/prioridades/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).catch(() => {});
+    });
   }, []);
 
   const removeManual = useCallback((id: string) => {
     setManuais(prev => prev.filter(p => p.id !== id));
-    fetch(`/api/prioridades/${id}`, { method: 'DELETE' }).catch(() => {});
+    gravar(`/api/prioridades/${id}`, { method: 'DELETE' });
   }, []);
 
   return { manuais, loaded, erro, addManual, toggleManual, updateManual, removeManual };

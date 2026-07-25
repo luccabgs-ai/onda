@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { AncoraTipo, Habito } from './types';
 import { toDateStr } from './nutricao';
 import { useRetryFetch } from './useRetryFetch';
+import { gravar } from './gravacao';
 
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -65,25 +66,25 @@ export function useHabitsStore() {
       atualizadoEm: now(),
     };
     setHabitos(prev => [...prev, h]);
-    fetch('/api/habitos', {
+    gravar('/api/habitos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(h),
-    }).catch(() => {});
+    });
   }, []);
 
   const updateHabito = useCallback((id: string, data: Partial<Omit<Habito, 'id' | 'votos' | 'criadoEm'>>) => {
     setHabitos(prev => prev.map(h => h.id === id ? { ...h, ...data, atualizadoEm: now() } : h));
-    fetch(`/api/habitos/${id}`, {
+    gravar(`/api/habitos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).catch(() => {});
+    });
   }, []);
 
   const deleteHabito = useCallback((id: string) => {
     setHabitos(prev => prev.filter(h => h.id !== id));
-    fetch(`/api/habitos/${id}`, { method: 'DELETE' }).catch(() => {});
+    gravar(`/api/habitos/${id}`, { method: 'DELETE' });
   }, []);
 
   // Lê o hábito atual de `habitos` (não de dentro do updater do setState) antes de decidir o
@@ -98,11 +99,11 @@ export function useHabitsStore() {
     else votos[dateStr] = true;
 
     setHabitos(prev => prev.map(h => h.id === id ? { ...h, votos, atualizadoEm: now() } : h));
-    fetch(`/api/habitos/${id}`, {
+    gravar(`/api/habitos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ votos }),
-    }).catch(() => {});
+    });
   }, [habitos]);
 
   const aceitarEncolhimento = useCallback((id: string, novaMeta: string) => {
@@ -110,11 +111,11 @@ export function useHabitsStore() {
       ? { ...h, metaAtual: novaMeta, encolhimentoDismissadoEm: undefined, atualizadoEm: now() }
       : h
     ));
-    fetch(`/api/habitos/${id}`, {
+    gravar(`/api/habitos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ metaAtual: novaMeta, encolhimentoDismissadoEm: null }),
-    }).catch(() => {});
+    });
   }, []);
 
   const dispensarEncolhimento = useCallback((id: string, dateStr: string = toDateStr(new Date())) => {
@@ -122,11 +123,11 @@ export function useHabitsStore() {
       ? { ...h, encolhimentoDismissadoEm: dateStr, atualizadoEm: now() }
       : h
     ));
-    fetch(`/api/habitos/${id}`, {
+    gravar(`/api/habitos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ encolhimentoDismissadoEm: dateStr }),
-    }).catch(() => {});
+    });
   }, []);
 
   return {

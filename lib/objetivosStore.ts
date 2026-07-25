@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { Meta, MetaRastreio, Objetivo, ObjetivoStatus } from './types';
 import { useRetryFetch } from './useRetryFetch';
+import { gravar } from './gravacao';
 
 const uid = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
@@ -12,11 +13,11 @@ interface StoreState {
 }
 
 const patchMeta = (id: string, data: Record<string, unknown>) => {
-  fetch(`/api/metas/${id}`, {
+  gravar(`/api/metas/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  }).catch(() => {});
+  });
 };
 
 export function useObjetivosStore() {
@@ -48,29 +49,29 @@ export function useObjetivosStore() {
       atualizadoEm: now(),
     };
     setState(s => ({ ...s, objetivos: [...s.objetivos, o] }));
-    fetch('/api/objetivos', {
+    gravar('/api/objetivos', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(o),
-    }).catch(() => {});
+    });
   }, []);
 
   const updateObjetivo = useCallback((id: string, data: Partial<Omit<Objetivo, 'id' | 'criadoEm'>>) => {
     setState(s => ({ ...s, objetivos: s.objetivos.map(o => o.id === id ? { ...o, ...data, atualizadoEm: now() } : o) }));
-    fetch(`/api/objetivos/${id}`, {
+    gravar(`/api/objetivos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).catch(() => {});
+    });
   }, []);
 
   const setObjetivoStatus = useCallback((id: string, status: ObjetivoStatus) => {
     setState(s => ({ ...s, objetivos: s.objetivos.map(o => o.id === id ? { ...o, status, atualizadoEm: now() } : o) }));
-    fetch(`/api/objetivos/${id}`, {
+    gravar(`/api/objetivos/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
-    }).catch(() => {});
+    });
   }, []);
 
   const deleteObjetivo = useCallback((id: string) => {
@@ -79,7 +80,7 @@ export function useObjetivosStore() {
       metas: s.metas.filter(m => m.objetivoId !== id),
     }));
     // apaga o objetivo — as metas somem juntas por causa do ON DELETE CASCADE no banco
-    fetch(`/api/objetivos/${id}`, { method: 'DELETE' }).catch(() => {});
+    gravar(`/api/objetivos/${id}`, { method: 'DELETE' });
   }, []);
 
   const createMeta = useCallback((objetivoId: string, data: {
@@ -105,11 +106,11 @@ export function useObjetivosStore() {
       atualizadoEm: now(),
     };
     setState(s => ({ ...s, metas: [...s.metas, m] }));
-    fetch('/api/metas', {
+    gravar('/api/metas', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(m),
-    }).catch(() => {});
+    });
   }, []);
 
   const updateMeta = useCallback((id: string, data: Partial<Omit<Meta, 'id' | 'objetivoId' | 'criadoEm'>>) => {
@@ -119,7 +120,7 @@ export function useObjetivosStore() {
 
   const deleteMeta = useCallback((id: string) => {
     setState(s => ({ ...s, metas: s.metas.filter(m => m.id !== id) }));
-    fetch(`/api/metas/${id}`, { method: 'DELETE' }).catch(() => {});
+    gravar(`/api/metas/${id}`, { method: 'DELETE' });
   }, []);
 
   // Lê o valor manual atual de `state.metas` (não de dentro do updater do setState) antes de
