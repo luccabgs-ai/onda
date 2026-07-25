@@ -27,6 +27,10 @@ export default function Home() {
   const [screen, setScreen] = useState('hoje');
   const [didCheckIn] = useState(true);
   const [hour, setHour] = useState<number>(() => new Date().getHours());
+  // Data real por extenso — o TODAY estático de lib/data.ts trazia uma data decorativa de maio.
+  const [dataExtensa] = useState(() =>
+    new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  );
   const store = useProjectsStore();
   const calendarStore = useCalendarStore();
   const habitsStore = useHabitsStore();
@@ -136,7 +140,7 @@ export default function Home() {
       >
         {screen === 'hoje'        && (
           <HojeScreen
-            today={TODAY}
+            today={{ ...TODAY, dataExtensa }}
             didCheckIn={didCheckIn}
             hour={hour}
             habitsStore={habitsStore}
