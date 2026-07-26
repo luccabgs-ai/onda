@@ -20,12 +20,12 @@ function ordenarTasks(tasks: Task[]): Task[] {
 }
 
 /**
- * Monta as prioridades do dia: prioridades manuais e eventos do calendário de hoje primeiro
- * (sempre aparecem, sem contar pro `limite`), depois preenche as vagas restantes até `limite`
- * na ordem: 1) tasks alta/média vencidas ou de hoje, 2) hábito agendado e ainda não votado da
- * Área mais negligenciada, 3) tasks baixa vencidas ou de hoje. Cada fonte já filtra o que está
- * concluído/votado — assim que o usuário resolve um item automático, ele sai da lista e o
- * próximo candidato do pool assume a vaga.
+ * Monta as prioridades do dia: prioridades manuais e eventos do calendário de hoje têm
+ * preferência — sempre aparecem e ocupam as vagas do `limite` primeiro. Tasks e hábitos são
+ * complemento: só entram se ainda sobrar vaga, na ordem 1) tasks alta/média vencidas ou de
+ * hoje, 2) hábito agendado e ainda não votado da Área mais negligenciada, 3) tasks baixa
+ * vencidas ou de hoje. Cada fonte já filtra o que está concluído/votado — assim que o usuário
+ * resolve um item automático, ele sai da lista e o próximo candidato do pool assume a vaga.
  */
 export function computePrioridadesDoDia(params: {
   tasks: Task[];
