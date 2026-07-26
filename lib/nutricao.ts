@@ -22,6 +22,11 @@ export function estaAgendadoEm(habito: Habito, dateStr: string): boolean {
   return diasSemanaDe(habito).includes(dow);
 }
 
+/** Dias anteriores à criação do hábito não contam em nenhum cálculo — ele ainda não existia. */
+function existiaEm(habito: Habito, dateStr: string): boolean {
+  return habito.criadoEm.slice(0, 10) <= dateStr;
+}
+
 export function descreverFrequencia(diasSemana: number[]): string {
   if (diasSemana.length === 7) return 'todo dia';
   if (diasSemana.length === 0) return 'sem dias definidos';
@@ -38,6 +43,7 @@ export function faltasConsecutivas(habito: Habito, hoje: string = toDateStr(new 
   let cursor = addDays(hoje, -1);
   // limite de segurança: não olha mais que 365 dias pra trás
   for (let i = 0; i < 365; i++) {
+    if (!existiaEm(habito, cursor)) break;
     if (estaAgendadoEm(habito, cursor)) {
       if (habito.votos[cursor]) break;
       faltas++;
@@ -93,7 +99,7 @@ export function computeNutridoMap(
 
     for (let k = 0; k < JANELA; k++) {
       const w = Math.pow(DECAY, k);
-      const relevantesDoDia = habitosDaArea.filter(h => estaAgendadoEm(h, cursor) || h.votos[cursor]);
+      const relevantesDoDia = habitosDaArea.filter(h => (existiaEm(h, cursor) && estaAgendadoEm(h, cursor)) || h.votos[cursor]);
       if (relevantesDoDia.length > 0) {
         const votados = relevantesDoDia.filter(h => h.votos[cursor]).length;
         const scoreDoDia = votados / relevantesDoDia.length;
@@ -114,7 +120,7 @@ export function historicoGrid(habito: Habito, dias: number = 30, hoje: string = 
   const out: { date: string; voted: boolean; scheduled: boolean }[] = [];
   let cursor = addDays(hoje, -(dias - 1));
   for (let i = 0; i < dias; i++) {
-    out.push({ date: cursor, voted: !!habito.votos[cursor], scheduled: estaAgendadoEm(habito, cursor) });
+    out.push({ date: cursor, voted: !!habito.votos[cursor], scheduled: existiaEm(habito, cursor) && estaAgendadoEm(habito, cursor) });
     cursor = addDays(cursor, 1);
   }
   return out;
