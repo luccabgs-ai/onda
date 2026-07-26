@@ -1,4 +1,4 @@
-import { Area, TodayData, RitualEntry } from './types';
+import { Area } from './types';
 
 export const AREAS: Area[] = [
   {
@@ -110,18 +110,3 @@ export const AREAS: Area[] = [
   },
 ];
 
-export const TODAY: TodayData = {
-  dataExtensa: 'segunda-feira, 4 de maio de 2026',
-  intencao: 'Entrar na semana com calma — fechar uma coisa por vez, sem empilhar.',
-  energia: 4,
-};
-
-export const RITUAIS: RitualEntry[] = [
-  { date: '3 mai', dow: 'dom', energiaAM: 3, energiaPM: 4, intencao: 'Domingo lento. Não brigar com a semana antes da hora.', funcionou: 'A leitura da manhã. Conseguir não abrir o laptop até as 14h.', carrega: 'Começar segunda já com a lista 4 da estatística aberta.' },
-  { date: '2 mai', dow: 'sáb', energiaAM: 4, energiaPM: 4, intencao: 'Ver os pais e não pensar em trabalho.', funcionou: 'Almoço lá. Conversa sobre a viagem de julho.', carrega: 'Ligar pra avó na segunda à noite.' },
-  { date: '1 mai', dow: 'sex', energiaAM: 2, energiaPM: 3, intencao: 'Fechar a semana com a entrega do Boreal, sem afobar.', funcionou: 'Dividir o trabalho em blocos de 90min com pausa.', carrega: 'Dormir mais cedo, acordei zoado.' },
-  { date: '30 abr', dow: 'qui', energiaAM: 4, energiaPM: 5, intencao: 'Corrida e treino. Ar livre.', funcionou: 'Tudo. Dia muito bom.', carrega: 'Repetir esse formato pelo menos 1x por semana.' },
-  { date: '29 abr', dow: 'qua', energiaAM: 3, energiaPM: 3, intencao: 'Encerrar o lookalike até o fim do dia.', funcionou: 'Manhã foi produtiva. Tarde travou.', carrega: 'Tirar reunião desnecessária da agenda.' },
-  { date: '28 abr', dow: 'ter', energiaAM: 3, energiaPM: 4, intencao: 'Manhã pra estudar, tarde pro Driva.', funcionou: 'Estudo cedo funcionou.', carrega: 'Levar livro pro deslocamento.' },
-  { date: '27 abr', dow: 'seg', energiaAM: 4, energiaPM: 4, intencao: 'Boa abertura de semana. Foco em uma coisa por vez.', funcionou: 'Bloquear 2h pro deep work pela manhã.', carrega: 'Manter esse bloco fixo na agenda.' },
-];

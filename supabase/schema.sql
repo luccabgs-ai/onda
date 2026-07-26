@@ -103,3 +103,17 @@ create table metas (
   criado_em text not null,
   atualizado_em text not null
 );
+
+-- Registros do ritual (check-in da manhã / check-out da noite) — 1 linha por dia/tipo.
+create table rituais (
+  id text primary key,
+  data text not null,
+  tipo text not null,
+  energia integer not null,
+  intencao text,
+  vitorias jsonb,
+  funcionou text,
+  carrega text,
+  criado_em text not null,
+  atualizado_em text not null
+);

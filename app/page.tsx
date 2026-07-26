@@ -19,14 +19,15 @@ import { usePrioridadesStore } from '@/lib/prioridadesStore';
 import { useCronometrosStore } from '@/lib/cronometrosStore';
 import { useCronometroSessao } from '@/lib/cronometroSessaoStore';
 import { useObjetivosStore } from '@/lib/objetivosStore';
+import { useRituaisStore } from '@/lib/rituaisStore';
 import { useFalhasDeGravacao, limparFalhasDeGravacao } from '@/lib/gravacao';
-import { TODAY } from '@/lib/data';
+import { toDateStr } from '@/lib/nutricao';
 import { Project } from '@/lib/types';
 
 export default function Home() {
   const [screen, setScreen] = useState('hoje');
-  const [didCheckIn] = useState(true);
   const [hour, setHour] = useState<number>(() => new Date().getHours());
+  const [hojeStr] = useState(() => toDateStr(new Date()));
   // Data real por extenso — o TODAY estático de lib/data.ts trazia uma data decorativa de maio.
   const [dataExtensa] = useState(() =>
     new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
@@ -38,10 +39,15 @@ export default function Home() {
   const cronometrosStore = useCronometrosStore();
   const cronometroSessao = useCronometroSessao();
   const objetivosStore = useObjetivosStore();
+  const rituaisStore = useRituaisStore();
   const [activeProject, setActiveProject] = useState<Project | null>(null);
 
+  // Check-in real: existe registro do ritual da manhã de hoje?
+  const didCheckIn = !!rituaisStore.registroDe(hojeStr, 'manha');
+
   const erroConexao = store.erro || calendarStore.erro || habitsStore.erro
-    || prioridadesStore.erro || cronometrosStore.erro || objetivosStore.erro;
+    || prioridadesStore.erro || cronometrosStore.erro || objetivosStore.erro
+    || rituaisStore.erro;
   const falhasGravacao = useFalhasDeGravacao();
 
   useEffect(() => {
@@ -140,8 +146,9 @@ export default function Home() {
       >
         {screen === 'hoje'        && (
           <HojeScreen
-            today={{ ...TODAY, dataExtensa }}
-            didCheckIn={didCheckIn}
+            dataExtensa={dataExtensa}
+            rituaisStore={rituaisStore}
+            onIrParaRitual={() => setScreen('ritual')}
             hour={hour}
             habitsStore={habitsStore}
             projectsStore={store}
@@ -175,7 +182,7 @@ export default function Home() {
         {screen === 'calendario' && (
           <CalendarioScreen calendarStore={calendarStore} projectsStore={store} />
         )}
-        {screen === 'ritual'      && <RitualScreen habitsStore={habitsStore} />}
+        {screen === 'ritual'      && <RitualScreen habitsStore={habitsStore} rituaisStore={rituaisStore} />}
         {screen === 'habitos'     && <HabitosScreen store={habitsStore} />}
         {screen === 'cronometros' && (
           <CronometrosScreen cronometrosStore={cronometrosStore} sessaoStore={cronometroSessao} />

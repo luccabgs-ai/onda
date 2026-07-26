@@ -1,12 +1,12 @@
 'use client';
 import React, { useState } from 'react';
-import { TodayData } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { useHabitsStore } from '@/lib/habitsStore';
 import { useProjectsStore } from '@/lib/projectsStore';
 import { usePrioridadesStore } from '@/lib/prioridadesStore';
 import { useObjetivosStore } from '@/lib/objetivosStore';
 import { useCalendarStore } from '@/lib/calendarStore';
+import { useRituaisStore } from '@/lib/rituaisStore';
 import { computeNutridoMap, votouHoje, estaAgendadoEm, toDateStr } from '@/lib/nutricao';
 import { computePrioridadesDoDia, PrioridadeItem } from '@/lib/prioridades';
 import { montarAreasVista } from '@/lib/areasStats';
@@ -22,14 +22,15 @@ import { IcCheck, IcEdit, IcTrash, IcCalendar2 } from '@/components/ui/icons';
 type HabitsStore = ReturnType<typeof useHabitsStore>;
 
 interface HojeScreenProps {
-  today: TodayData;
-  didCheckIn: boolean;
+  dataExtensa: string;
   hour: number;
   habitsStore: HabitsStore;
   projectsStore: ReturnType<typeof useProjectsStore>;
   prioridadesStore: ReturnType<typeof usePrioridadesStore>;
   objetivosStore: ReturnType<typeof useObjetivosStore>;
   calendarStore: ReturnType<typeof useCalendarStore>;
+  rituaisStore: ReturnType<typeof useRituaisStore>;
+  onIrParaRitual: () => void;
 }
 
 const SectionTitle = ({
@@ -89,42 +90,35 @@ const NightWaveBg = () => (
 
 interface CheckInCardProps {
   isEvening: boolean;
+  feito: boolean;          // o ritual correspondente (manhã ou noite) já foi registrado hoje?
+  onIrParaRitual: () => void;
 }
 
-const CheckInCard = ({ isEvening }: CheckInCardProps) => {
-  const [reflection, setReflection] = useState('');
-
-  if (isEvening) {
-    return (
-      <Card style={{ padding: '20px', position: 'relative', overflow: 'hidden' }}>
-        <NightWaveBg />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--char-mute)', marginBottom: 6 }}>
-            CHECK-OUT · 振り返り
-          </div>
-          <div className="serif" style={{ fontSize: 17, color: 'var(--ink)', marginBottom: 12, fontStyle: 'italic' }}>
-            Como foi hoje?
-          </div>
-          <textarea
-            value={reflection}
-            onChange={(e) => setReflection(e.target.value)}
-            placeholder="Uma palavra, uma frase... o que ficou do dia."
-            style={{
-              width: '100%',
-              background: 'rgba(255,255,255,0.5)',
-              border: '1px solid rgba(27,54,93,0.12)',
-              borderRadius: 5,
-              padding: '10px 12px',
-              fontSize: 13,
-              color: 'var(--char)',
-              resize: 'none',
-              minHeight: 72,
-              lineHeight: 1.6,
-            }}
-          />
+const CheckInCard = ({ isEvening, feito, onIrParaRitual }: CheckInCardProps) => (
+  <Card style={{ padding: '20px', position: 'relative', overflow: 'hidden' }}>
+    {isEvening && <NightWaveBg />}
+    <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--char-mute)', marginBottom: 6 }}>
+        {isEvening ? 'CHECK-OUT · 振り返り' : 'RITUAL · 朝の儀式'}
+      </div>
+      <div className="serif" style={{ fontSize: 17, color: 'var(--ink)', marginBottom: 8, fontStyle: 'italic' }}>
+        {isEvening ? 'Como foi hoje?' : 'Bom dia, Lucca.'}
+      </div>
+      {feito ? (
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--moss)' }}>
+          <IcCheck size={15} stroke="var(--moss)" sw={2} />
+          {isEvening ? 'check-out feito — descanse.' : 'check-in feito — sua intenção guia o dia.'}
+        </div>
+      ) : (
+        <>
+          <p style={{ fontSize: 13, color: 'var(--char-soft)', lineHeight: 1.6, marginBottom: 14 }}>
+            {isEvening
+              ? 'Três perguntas rápidas pra fechar o dia com consciência.'
+              : 'Três perguntas rápidas pra entrar no dia com clareza.'}
+          </p>
           <button
+            onClick={onIrParaRitual}
             style={{
-              marginTop: 10,
               padding: '8px 16px',
               background: 'var(--ink)',
               color: 'var(--washi)',
@@ -134,40 +128,13 @@ const CheckInCard = ({ isEvening }: CheckInCardProps) => {
               letterSpacing: '0.04em',
             }}
           >
-            Registrar reflexão
+            {isEvening ? 'Fazer o check-out noturno' : 'Fazer o check-in matinal'}
           </button>
-        </div>
-      </Card>
-    );
-  }
-
-  return (
-    <Card style={{ padding: '20px' }}>
-      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--char-mute)', marginBottom: 6 }}>
-        RITUAL · 朝の儀式
-      </div>
-      <div className="serif" style={{ fontSize: 17, color: 'var(--ink)', marginBottom: 8, fontStyle: 'italic' }}>
-        Bom dia, Lucca.
-      </div>
-      <p style={{ fontSize: 13, color: 'var(--char-soft)', lineHeight: 1.6, marginBottom: 14 }}>
-        Antes de começar, defina sua intenção para hoje.
-      </p>
-      <input
-        type="text"
-        placeholder="Minha intenção para hoje é..."
-        style={{
-          width: '100%',
-          background: 'rgba(255,255,255,0.5)',
-          border: '1px solid rgba(27,54,93,0.12)',
-          borderRadius: 5,
-          padding: '9px 12px',
-          fontSize: 13,
-          color: 'var(--char)',
-        }}
-      />
-    </Card>
-  );
-};
+        </>
+      )}
+    </div>
+  </Card>
+);
 
 interface StreakCardProps {
   habitos: ReturnType<typeof useHabitsStore>['habitos'];
@@ -207,7 +174,7 @@ const StreakSummaryInline = ({ habitos }: StreakCardProps) => {
   );
 };
 
-export default function HojeScreen({ today, didCheckIn, hour, habitsStore, projectsStore, prioridadesStore, objetivosStore, calendarStore }: HojeScreenProps) {
+export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsStore, prioridadesStore, objetivosStore, calendarStore, rituaisStore, onIrParaRitual }: HojeScreenProps) {
   const [hoveredHabitoId, setHoveredHabitoId] = useState<string | null>(null);
   const [addingPrioridade, setAddingPrioridade] = useState(false);
   const [novaPrioridade, setNovaPrioridade] = useState('');
@@ -224,6 +191,8 @@ export default function HojeScreen({ today, didCheckIn, hour, habitsStore, proje
   const { events } = calendarStore;
   const hojeStr = toDateStr(new Date());
   const habitosHoje = habitos.filter(h => estaAgendadoEm(h, hojeStr));
+  const registroManha = rituaisStore.registroDe(hojeStr, 'manha');
+  const registroNoite = rituaisStore.registroDe(hojeStr, 'noite');
 
   const isEvening = hour >= 20;
   const greeting = isEvening ? 'boa noite,' : 'bom dia,';
@@ -285,7 +254,7 @@ export default function HojeScreen({ today, didCheckIn, hour, habitsStore, proje
           color: 'var(--char-mute)',
           marginBottom: 8,
         }}>
-          {today.dataExtensa}
+          {dataExtensa}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20 }}>
@@ -300,51 +269,76 @@ export default function HojeScreen({ today, didCheckIn, hour, habitsStore, proje
             <em style={{ fontStyle: 'italic', color: 'var(--ink-soft)' }}>Lucca.</em>
           </h1>
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--char-mute)' }}>
-              Energia
+          {registroManha && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--char-mute)' }}>
+                Energia
+              </div>
+              <EnergyScale value={registroManha.energia} readOnly />
             </div>
-            <EnergyScale value={today.energia} readOnly />
-          </div>
+          )}
         </div>
       </div>
 
       {/* ── INTENTION BAR + VOTOS DE HOJE ── */}
-      {(didCheckIn || habitos.length > 0) && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          gap: 20,
-          marginBottom: 24,
-        }}>
-          {didCheckIn ? (
-            <div style={{ paddingLeft: 16, borderLeft: '2.5px solid var(--ink)' }}>
-              <div style={{
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                color: 'var(--ink-soft)',
-                marginBottom: 4,
-              }}>
-                Intenção do Dia
-              </div>
-              <p className="serif" style={{
-                fontSize: 17,
-                fontStyle: 'italic',
-                color: 'var(--char)',
-                margin: 0,
-                lineHeight: 1.5,
-              }}>
-                &ldquo;{today.intencao}&rdquo;
-              </p>
+      <div style={{
+        display: 'flex',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        gap: 20,
+        marginBottom: 24,
+      }}>
+        {registroManha?.intencao ? (
+          <div style={{ paddingLeft: 16, borderLeft: '2.5px solid var(--ink)' }}>
+            <div style={{
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--ink-soft)',
+              marginBottom: 4,
+            }}>
+              Intenção do Dia
             </div>
-          ) : <div />}
+            <p className="serif" style={{
+              fontSize: 17,
+              fontStyle: 'italic',
+              color: 'var(--char)',
+              margin: 0,
+              lineHeight: 1.5,
+            }}>
+              &ldquo;{registroManha.intencao}&rdquo;
+            </p>
+          </div>
+        ) : (
+          <button
+            onClick={onIrParaRitual}
+            style={{ paddingLeft: 16, borderLeft: '2.5px solid rgba(27,54,93,0.25)', textAlign: 'left', cursor: 'pointer' }}
+          >
+            <div style={{
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--char-mute)',
+              marginBottom: 4,
+            }}>
+              Intenção do Dia
+            </div>
+            <p className="serif" style={{
+              fontSize: 15,
+              fontStyle: 'italic',
+              color: 'var(--char-mute)',
+              margin: 0,
+              lineHeight: 1.5,
+            }}>
+              sem intenção ainda — fazer o ritual da manhã →
+            </p>
+          </button>
+        )}
 
-          {habitos.length > 0 && <StreakSummaryInline habitos={habitosHoje} />}
-        </div>
-      )}
+        {habitos.length > 0 && <StreakSummaryInline habitos={habitosHoje} />}
+      </div>
 
       {/* Brush divider */}
       <div className="brush-divider" style={{ marginBottom: 32 }} />
@@ -766,7 +760,11 @@ export default function HojeScreen({ today, didCheckIn, hour, habitsStore, proje
           title={isEvening ? 'Reflexão' : 'Ritual'}
           jp={isEvening ? '振り返り' : '儀式'}
         />
-        <CheckInCard isEvening={isEvening} />
+        <CheckInCard
+          isEvening={isEvening}
+          feito={isEvening ? !!registroNoite : !!registroManha}
+          onIrParaRitual={onIrParaRitual}
+        />
       </div>
     </div>
   );

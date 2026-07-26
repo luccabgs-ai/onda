@@ -50,20 +50,19 @@ export interface Habito {
   atualizadoEm: string;
 }
 
-export interface TodayData {
-  dataExtensa: string;
-  intencao: string;
-  energia: number;
-}
+export type RitualTipo = 'manha' | 'noite';
 
-export interface RitualEntry {
-  date: string;
-  dow: string;
-  energiaAM: number;
-  energiaPM: number;
-  intencao: string;
-  funcionou: string;
-  carrega: string;
+export interface RitualRegistro {
+  id: string;          // `${data}-${tipo}` — no máximo um registro por dia/tipo, upsert idempotente
+  data: string;        // 'YYYY-MM-DD'
+  tipo: RitualTipo;
+  energia: number;     // 1..5 — manhã: como acordou; noite: como foi o dia
+  intencao?: string;   // manhã
+  vitorias?: string[]; // manhã — as 3 coisas que seriam vitória
+  funcionou?: string;  // noite
+  carrega?: string;    // noite — o que fica pra amanhã
+  criadoEm: string;
+  atualizadoEm: string;
 }
 
 export type Priority = 'baixa' | 'media' | 'alta';

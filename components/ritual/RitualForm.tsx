@@ -3,10 +3,18 @@ import React, { useState } from 'react';
 import { IcSun, IcMoon, IcClose, IcArrowR, IcCheck } from '@/components/ui/icons';
 import { EnergyScale } from '@/components/hoje/EnergyScale';
 
+export interface RitualRespostas {
+  energia: number;
+  intencao?: string;
+  vitorias?: string[];
+  funcionou?: string;
+  carrega?: string;
+}
+
 interface RitualFormProps {
   kind: 'morning' | 'evening';
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (respostas: RitualRespostas) => void;
 }
 
 const ritualInput: React.CSSProperties = {
@@ -73,8 +81,11 @@ export default function RitualForm({ kind, onClose, onSubmit }: RitualFormProps)
 
   const next = () => {
     if (last) {
+      const respostas: RitualRespostas = morning
+        ? { energia: energy, intencao: text1.trim(), vitorias: vit.map(v => v.trim()) }
+        : { energia: energy, funcionou: text1.trim(), carrega: text2.trim() };
       setDone(true);
-      setTimeout(() => onSubmit(), 1900);
+      setTimeout(() => onSubmit(respostas), 1900);
     } else {
       setStep(step + 1);
     }

@@ -1,11 +1,13 @@
 'use client';
 import React, { useState } from 'react';
-import { RitualEntry, Habito } from '@/lib/types';
-import { RITUAIS, AREAS } from '@/lib/data';
+import { Habito, RitualRegistro } from '@/lib/types';
+import { AREAS } from '@/lib/data';
 import { useHabitsStore } from '@/lib/habitsStore';
+import { useRituaisStore } from '@/lib/rituaisStore';
+import { toDateStr } from '@/lib/nutricao';
 import { IcSun, IcMoon, IcCheck, IcArrowR } from '@/components/ui/icons';
 import { Card } from '@/components/ui/Card';
-import RitualForm from './RitualForm';
+import RitualForm, { RitualRespostas } from './RitualForm';
 
 const ENERGY_LABELS = ['exausto', 'baixa', 'morna', 'firme', 'cheia'];
 
@@ -154,76 +156,123 @@ const RitualCard = ({
 };
 
 // ── Timeline row ──────────────────────────────────────────────────────────────
-const TimelineRow = ({ r }: { r: RitualEntry }) => (
-  <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-    {/* Date column */}
-    <div style={{ width: 54, flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>
-      <div className="serif" style={{ fontSize: 18, color: 'var(--ink)', lineHeight: 1, fontWeight: 500 }}>
-        {r.date}
-      </div>
-      <div style={{
-        fontSize: 10, color: 'var(--char-mute)',
-        letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 2,
-      }}>
-        {r.dow}
-      </div>
-    </div>
+// Um dia do histórico: o registro da manhã e/ou da noite daquele dia.
+interface DiaVista {
+  data: string; // 'YYYY-MM-DD'
+  manha?: RitualRegistro;
+  noite?: RitualRegistro;
+}
 
-    {/* Timeline dot */}
-    <div style={{ position: 'relative', width: 28, flexShrink: 0, paddingTop: 5, display: 'flex', justifyContent: 'center' }}>
-      <div style={{
-        width: 10, height: 10, borderRadius: '50%',
-        background: 'var(--washi)',
-        border: '1.5px solid rgba(27,54,93,0.30)',
-      }} />
-    </div>
+const MESES_ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const DOW_ABREV = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 
-    {/* Content */}
-    <div style={{ flex: 1, paddingBottom: 28 }}>
-      {/* Energy */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-        <EnergyBars value={r.energiaPM} />
-        <div style={{ fontSize: 11, color: 'var(--char-mute)' }}>
-          energia · {ENERGY_LABELS[r.energiaPM - 1]}
+const TimelineRow = ({ dia }: { dia: DiaVista }) => {
+  const d = new Date(dia.data + 'T12:00:00');
+  const energia = dia.noite?.energia ?? dia.manha?.energia ?? 0;
+
+  return (
+    <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+      {/* Date column */}
+      <div style={{ width: 54, flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>
+        <div className="serif" style={{ fontSize: 18, color: 'var(--ink)', lineHeight: 1, fontWeight: 500 }}>
+          {d.getDate()} {MESES_ABREV[d.getMonth()]}
+        </div>
+        <div style={{
+          fontSize: 10, color: 'var(--char-mute)',
+          letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 2,
+        }}>
+          {DOW_ABREV[d.getDay()]}
         </div>
       </div>
 
-      {/* Intention */}
-      <p className="serif" style={{
-        fontSize: 16, color: 'var(--char)',
-        margin: '0 0 10px', fontStyle: 'italic', lineHeight: 1.4,
-      }}>
-        &ldquo;{r.intencao}&rdquo;
-      </p>
+      {/* Timeline dot */}
+      <div style={{ position: 'relative', width: 28, flexShrink: 0, paddingTop: 5, display: 'flex', justifyContent: 'center' }}>
+        <div style={{
+          width: 10, height: 10, borderRadius: '50%',
+          background: 'var(--washi)',
+          border: '1.5px solid rgba(27,54,93,0.30)',
+        }} />
+      </div>
 
-      {/* funcionou + carrega */}
-      <div style={{ display: 'flex', gap: 32, fontSize: 12, color: 'var(--char-soft)' }}>
-        <div style={{ flex: 1 }}>
-          <span style={{ color: 'var(--moss)', fontWeight: 500 }}>funcionou · </span>
-          {r.funcionou}
-        </div>
-        <div style={{ flex: 1 }}>
-          <span style={{ color: 'var(--hanko)', fontWeight: 500 }}>carrega · </span>
-          {r.carrega}
-        </div>
+      {/* Content */}
+      <div style={{ flex: 1, paddingBottom: 28 }}>
+        {/* Energy */}
+        {energia > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <EnergyBars value={energia} />
+            <div style={{ fontSize: 11, color: 'var(--char-mute)' }}>
+              energia · {ENERGY_LABELS[energia - 1]}
+            </div>
+          </div>
+        )}
+
+        {/* Intention */}
+        {dia.manha?.intencao && (
+          <p className="serif" style={{
+            fontSize: 16, color: 'var(--char)',
+            margin: '0 0 10px', fontStyle: 'italic', lineHeight: 1.4,
+          }}>
+            &ldquo;{dia.manha.intencao}&rdquo;
+          </p>
+        )}
+
+        {/* funcionou + carrega */}
+        {dia.noite && (
+          <div style={{ display: 'flex', gap: 32, fontSize: 12, color: 'var(--char-soft)' }}>
+            <div style={{ flex: 1 }}>
+              <span style={{ color: 'var(--moss)', fontWeight: 500 }}>funcionou · </span>
+              {dia.noite.funcionou}
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={{ color: 'var(--hanko)', fontWeight: 500 }}>carrega · </span>
+              {dia.noite.carrega}
+            </div>
+          </div>
+        )}
+        {!dia.noite && (
+          <div style={{ fontSize: 12, color: 'var(--char-mute)', fontStyle: 'italic' }}>
+            sem check-out noturno nesse dia
+          </div>
+        )}
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 interface RitualScreenProps {
   habitsStore: ReturnType<typeof useHabitsStore>;
+  rituaisStore: ReturnType<typeof useRituaisStore>;
 }
 
-export default function RitualScreen({ habitsStore }: RitualScreenProps) {
-  const [didCheckIn, setDidCheckIn] = useState(true);
+export default function RitualScreen({ habitsStore, rituaisStore }: RitualScreenProps) {
   const [ritualKind, setRitualKind] = useState<'morning' | 'evening' | null>(null);
 
-  const handleSubmit = () => {
-    if (ritualKind === 'morning') setDidCheckIn(true);
+  const { registros, salvarRitual, registroDe } = rituaisStore;
+  const hojeStr = toDateStr(new Date());
+  const manhaFeita = !!registroDe(hojeStr, 'manha');
+  const noiteFeita = !!registroDe(hojeStr, 'noite');
+
+  const handleSubmit = (respostas: RitualRespostas) => {
+    if (ritualKind) {
+      salvarRitual({
+        data: hojeStr,
+        tipo: ritualKind === 'morning' ? 'manha' : 'noite',
+        ...respostas,
+      });
+    }
     setRitualKind(null);
   };
+
+  // Agrupa manhã e noite do mesmo dia numa linha só, mais recente primeiro, últimos 7 dias com registro.
+  const dias: DiaVista[] = [];
+  for (const r of [...registros].sort((a, b) => b.data.localeCompare(a.data))) {
+    let dia = dias.find(d => d.data === r.data);
+    if (!dia && dias.length >= 7) continue;
+    if (!dia) { dia = { data: r.data }; dias.push(dia); }
+    if (r.tipo === 'manha') dia.manha = r;
+    else dia.noite = r;
+  }
 
   const habitosManha = habitsStore.habitos.filter(h => h.ancoraTipo === 'ritual_manha');
   const habitosNoite = habitsStore.habitos.filter(h => h.ancoraTipo === 'ritual_noite');
@@ -258,8 +307,8 @@ export default function RitualScreen({ habitsStore }: RitualScreenProps) {
 
       {/* Two ritual cards */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 56 }}>
-        <RitualCard kind="morning" done={didCheckIn} onStart={() => setRitualKind('morning')} anchoredHabitos={habitosManha} />
-        <RitualCard kind="evening" done={false}      onStart={() => setRitualKind('evening')} anchoredHabitos={habitosNoite} />
+        <RitualCard kind="morning" done={manhaFeita} onStart={() => setRitualKind('morning')} anchoredHabitos={habitosManha} />
+        <RitualCard kind="evening" done={noiteFeita} onStart={() => setRitualKind('evening')} anchoredHabitos={habitosNoite} />
       </div>
 
       {/* Timeline */}
@@ -281,23 +330,29 @@ export default function RitualScreen({ habitsStore }: RitualScreenProps) {
       </div>
 
       {/* Timeline list */}
-      <div style={{ position: 'relative', marginTop: 24 }}>
-        {/* Vertical line */}
-        <div style={{
-          position: 'absolute',
-          left: 68,
-          top: 6,
-          bottom: 6,
-          width: 1,
-          background: 'linear-gradient(to bottom, transparent, rgba(27,54,93,0.18), transparent)',
-        }} />
+      {dias.length === 0 ? (
+        <p style={{ fontSize: 13, color: 'var(--char-mute)', fontStyle: 'italic', marginTop: 24 }}>
+          nenhum ritual registrado ainda — o histórico nasce no primeiro check-in.
+        </p>
+      ) : (
+        <div style={{ position: 'relative', marginTop: 24 }}>
+          {/* Vertical line */}
+          <div style={{
+            position: 'absolute',
+            left: 68,
+            top: 6,
+            bottom: 6,
+            width: 1,
+            background: 'linear-gradient(to bottom, transparent, rgba(27,54,93,0.18), transparent)',
+          }} />
 
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {RITUAIS.map((r, i) => (
-            <TimelineRow key={i} r={r} />
-          ))}
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {dias.map(dia => (
+              <TimelineRow key={dia.data} dia={dia} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Ritual form modal */}
       {ritualKind && (

@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { AREAS, TODAY } from '@/lib/data';
+import { AREAS } from '@/lib/data';
 import { Hanko } from '@/components/ui/Hanko';
 import { IcSend } from '@/components/ui/icons';
 
@@ -137,7 +137,7 @@ const ThinkingBubble = () => (
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function CompanheiraScreen() {
-  const introText = `Bom dia, Lucca. Vi que você fez check-in com energia 4 e definiu sua intenção como "${TODAY.intencao}" Suas três vitórias de hoje são Atlas, lista 4 de estatística, e o treino A. Quer que a gente desenhe a ordem do dia juntos, ou prefere conversar sobre alguma área?`;
+  const introText = `Bom dia, Lucca. Quer que a gente desenhe a ordem do dia juntos, ou prefere conversar sobre alguma área?`;
 
   const [messages, setMessages] = useState<Message[]>([
     { role: 'ai', text: introText, time: '08:42' },
