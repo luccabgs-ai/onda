@@ -33,7 +33,7 @@ export const Bussola = ({ size = 340, nutridoMap }: BussolaProps) => {
   const RlabelFar = Rmax + 38;
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: 'visible' }}>
       <defs>
         <radialGradient id="bussolaFill" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="var(--ink-soft)" stopOpacity="0.6" />
