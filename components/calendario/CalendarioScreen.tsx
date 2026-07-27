@@ -54,6 +54,7 @@ interface TaskItem {
   date: string;
   type: EventType;
   color: string;
+  areaId?: string;
   isTask: boolean;
   taskDone: boolean;
 }
@@ -104,14 +105,15 @@ export default function CalendarioScreen({ calendarStore, projectsStore }: Props
         date: t.dueDate!,
         type: 'lembrete' as EventType,
         color: proj?.color ?? 'var(--ink)',
+        areaId: proj?.areaId,
         isTask: true,
         taskDone: t.status === 'concluido',
       };
     });
 
-  // Filter logic
+  // Filter logic — a task não guarda areaId direto, herda do projeto (calculado acima).
   const filteredCalEvents = calendarStore.events.filter(e => !filterArea || e.areaId === filterArea);
-  const filteredTaskEvents = filterArea ? [] : taskEvents;
+  const filteredTaskEvents = taskEvents.filter(t => !filterArea || t.areaId === filterArea);
 
   const allFilteredItems = [
     ...filteredCalEvents.map(e => ({ ...e, isTask: false, taskDone: false })),
