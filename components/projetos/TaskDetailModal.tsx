@@ -15,7 +15,9 @@ const STATUS_COLUMNS: { id: TaskStatus; label: string }[] = [
 
 function isPastDue(dueDate?: string): boolean {
   if (!dueDate) return false;
-  return new Date(dueDate) < new Date();
+  // 'YYYY-MM-DD' sozinho é interpretado como meia-noite UTC — 21h da véspera no fuso do
+  // Brasil. Fim do dia local é o mesmo critério usado no quadro do projeto (ProjectDetail).
+  return new Date(dueDate + 'T23:59:59') < new Date();
 }
 
 function formatDate(dateStr: string): string {
