@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { RitualRegistro } from '@/lib/types';
+import { RitualRegistro, PrioridadeRitual } from '@/lib/types';
 
 interface RitualRow {
   id: string;
@@ -8,7 +8,7 @@ interface RitualRow {
   tipo: 'manha' | 'noite';
   energia: number;
   intencao: string | null;
-  vitorias: string[] | null;
+  vitorias: PrioridadeRitual[] | null;
   funcionou: string | null;
   carrega: string | null;
   criado_em: string;

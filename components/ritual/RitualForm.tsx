@@ -1,20 +1,37 @@
 'use client';
 import React, { useState } from 'react';
+import { CalendarEvent, Habito, PrioridadeRitual, Project, Task } from '@/lib/types';
 import { IcSun, IcMoon, IcClose, IcArrowR, IcCheck } from '@/components/ui/icons';
 import { EnergyScale } from '@/components/hoje/EnergyScale';
+import PrioridadeSlotEditor from './PrioridadeSlotEditor';
 
 export interface RitualRespostas {
   energia: number;
   intencao?: string;
-  vitorias?: string[];
+  vitorias?: PrioridadeRitual[];
   funcionou?: string;
   carrega?: string;
+}
+
+const SLOT_VAZIO: PrioridadeRitual = { origem: 'manual', texto: '' };
+
+function slotPreenchido(v: PrioridadeRitual): boolean {
+  if (v.origem === 'manual') return !!v.texto?.trim();
+  if (v.origem === 'evento') return !!v.eventoId;
+  if (v.origem === 'task') return !!v.taskId;
+  if (v.origem === 'habito') return !!v.habitoId;
+  return false;
 }
 
 interface RitualFormProps {
   kind: 'morning' | 'evening';
   onClose: () => void;
   onSubmit: (respostas: RitualRespostas) => void;
+  hoje: string;
+  eventos: CalendarEvent[];
+  tasks: Task[];
+  projects: Project[];
+  habitos: Habito[];
 }
 
 const ritualInput: React.CSSProperties = {
@@ -47,13 +64,13 @@ const PetalRipple = () => (
   </div>
 );
 
-export default function RitualForm({ kind, onClose, onSubmit }: RitualFormProps) {
+export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tasks, projects, habitos }: RitualFormProps) {
   const morning = kind === 'morning';
   const [step, setStep] = useState(0);
   const [energy, setEnergy] = useState(3);
   const [text1, setText1] = useState('');
   const [text2, setText2] = useState('');
-  const [vit, setVit] = useState(['', '', '']);
+  const [vit, setVit] = useState<PrioridadeRitual[]>([SLOT_VAZIO, SLOT_VAZIO, SLOT_VAZIO]);
   const [done, setDone] = useState(false);
 
   const cfg = morning
@@ -82,7 +99,7 @@ export default function RitualForm({ kind, onClose, onSubmit }: RitualFormProps)
   const next = () => {
     if (last) {
       const respostas: RitualRespostas = morning
-        ? { energia: energy, intencao: text1.trim(), vitorias: vit.map(v => v.trim()) }
+        ? { energia: energy, intencao: text1.trim(), vitorias: vit }
         : { energia: energy, funcionou: text1.trim(), carrega: text2.trim() };
       setDone(true);
       setTimeout(() => onSubmit(respostas), 1900);
@@ -95,7 +112,7 @@ export default function RitualForm({ kind, onClose, onSubmit }: RitualFormProps)
     if (cur.kind === 'energy') return true;
     if (cur.kind === 'text')   return text1.trim().length > 0;
     if (cur.kind === 'text2')  return text2.trim().length > 0;
-    if (cur.kind === 'three')  return vit.every(v => v.trim().length > 0);
+    if (cur.kind === 'three')  return vit.every(slotPreenchido);
     return true;
   };
 
@@ -210,16 +227,24 @@ export default function RitualForm({ kind, onClose, onSubmit }: RitualFormProps)
               />
             )}
             {cur.kind === 'three' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {vit.map((v, i) => (
-                  <input
-                    key={i}
-                    autoFocus={i === 0}
-                    value={v}
-                    onChange={e => { const c = [...vit]; c[i] = e.target.value; setVit(c); }}
-                    placeholder={['primeira vitória…', 'segunda…', 'terceira…'][i]}
-                    style={{ ...ritualInput, padding: '12px 14px' } as React.CSSProperties}
-                  />
+                  <div key={i} style={{ padding: '10px 12px', border: '1px solid rgba(27,54,93,0.12)', borderRadius: 6, background: 'rgba(255,253,247,0.5)' }}>
+                    <div style={{ fontSize: 10, color: 'var(--char-mute)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                      {['primeira', 'segunda', 'terceira'][i]}
+                    </div>
+                    <PrioridadeSlotEditor
+                      value={v}
+                      onChange={novo => { const c = [...vit]; c[i] = novo; setVit(c); }}
+                      hoje={hoje}
+                      eventos={eventos}
+                      tasks={tasks}
+                      projects={projects}
+                      habitos={habitos}
+                      placeholder={['primeira vitória…', 'segunda…', 'terceira…'][i]}
+                      autoFocus={i === 0}
+                    />
+                  </div>
                 ))}
               </div>
             )}

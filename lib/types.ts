@@ -15,14 +15,21 @@ export interface Area {
   notas?: { date: string; text: string }[];
 }
 
-/** Prioridade adicionada à mão pelo usuário — soma-se às sugeridas automaticamente pelo app. */
-export interface PrioridadeManual {
-  id: string;
-  text: string;
-  areaId?: string;
-  done: boolean;
-  data: string;       // 'YYYY-MM-DD' — dia ao qual essa prioridade pertence
-  createdAt: string;
+/** De onde vem uma das 3 prioridades do dia, escolhida no ritual da manhã. */
+export type PrioridadeOrigem = 'manual' | 'evento' | 'task' | 'habito';
+
+/**
+ * Uma das 3 prioridades do dia. `manual` guarda o texto (e seu próprio `done`, já que não tem
+ * outro dado de onde derivar isso); as outras origens só guardam o id referenciado — o texto e
+ * o estado de feito/votado vêm sempre do dado real (task/hábito/evento) na hora de exibir.
+ */
+export interface PrioridadeRitual {
+  origem: PrioridadeOrigem;
+  texto?: string;
+  done?: boolean;
+  eventoId?: string;
+  taskId?: string;
+  habitoId?: string;
 }
 
 /**
@@ -58,7 +65,7 @@ export interface RitualRegistro {
   tipo: RitualTipo;
   energia: number;     // 1..5 — manhã: como acordou; noite: como foi o dia
   intencao?: string;   // manhã
-  vitorias?: string[]; // manhã — as 3 coisas que seriam vitória
+  vitorias?: PrioridadeRitual[]; // manhã — as 3 prioridades do dia
   funcionou?: string;  // noite
   carrega?: string;    // noite — o que fica pra amanhã
   criadoEm: string;

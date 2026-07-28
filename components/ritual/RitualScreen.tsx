@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Habito, RitualRegistro } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { useHabitsStore } from '@/lib/habitsStore';
+import { useProjectsStore } from '@/lib/projectsStore';
+import { useCalendarStore } from '@/lib/calendarStore';
 import { useRituaisStore } from '@/lib/rituaisStore';
 import { toDateStr } from '@/lib/nutricao';
 import { IcSun, IcMoon, IcCheck, IcArrowR } from '@/components/ui/icons';
@@ -243,9 +245,11 @@ const TimelineRow = ({ dia }: { dia: DiaVista }) => {
 interface RitualScreenProps {
   habitsStore: ReturnType<typeof useHabitsStore>;
   rituaisStore: ReturnType<typeof useRituaisStore>;
+  projectsStore: ReturnType<typeof useProjectsStore>;
+  calendarStore: ReturnType<typeof useCalendarStore>;
 }
 
-export default function RitualScreen({ habitsStore, rituaisStore }: RitualScreenProps) {
+export default function RitualScreen({ habitsStore, rituaisStore, projectsStore, calendarStore }: RitualScreenProps) {
   const [ritualKind, setRitualKind] = useState<'morning' | 'evening' | null>(null);
 
   const { registros, salvarRitual, registroDe } = rituaisStore;
@@ -360,6 +364,11 @@ export default function RitualScreen({ habitsStore, rituaisStore }: RitualScreen
           kind={ritualKind}
           onClose={() => setRitualKind(null)}
           onSubmit={handleSubmit}
+          hoje={hojeStr}
+          eventos={calendarStore.events}
+          tasks={projectsStore.tasks}
+          projects={projectsStore.projects}
+          habitos={habitsStore.habitos}
         />
       )}
     </div>

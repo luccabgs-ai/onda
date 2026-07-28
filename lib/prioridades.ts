@@ -1,84 +1,55 @@
-import { Task, Habito, Project, PrioridadeManual, Priority, CalendarEvent } from './types';
-import { estaAgendadoEm, votouHoje } from './nutricao';
+import { Task, Habito, Project, CalendarEvent, PrioridadeRitual } from './types';
+import { votouHoje } from './nutricao';
 
 export type PrioridadeItem =
-  | { kind: 'manual'; id: string; text: string; areaId?: string; done: boolean }
-  | { kind: 'task'; id: string; text: string; areaId?: string; done: boolean; taskId: string; priority: Priority }
-  | { kind: 'habito'; id: string; text: string; areaId?: string; done: boolean; habitoId: string }
-  | { kind: 'evento'; id: string; text: string; areaId?: string; done: boolean; eventId: string; time?: string };
-
-const PESO_PRIORIDADE: Record<Priority, number> = { alta: 2, media: 1, baixa: 0 };
-
-function ordenarTasks(tasks: Task[]): Task[] {
-  return [...tasks].sort((a, b) => {
-    const pesoDiff = PESO_PRIORIDADE[b.priority] - PESO_PRIORIDADE[a.priority];
-    if (pesoDiff !== 0) return pesoDiff;
-    const dueDiff = (a.dueDate ?? '').localeCompare(b.dueDate ?? '');
-    if (dueDiff !== 0) return dueDiff;
-    return a.createdAt.localeCompare(b.createdAt);
-  });
-}
+  | { kind: 'manual'; id: string; text: string; areaId?: string; done: boolean; slotIndex: number }
+  | { kind: 'task'; id: string; text: string; areaId?: string; done: boolean; taskId: string; slotIndex: number }
+  | { kind: 'habito'; id: string; text: string; areaId?: string; done: boolean; habitoId: string; slotIndex: number }
+  | { kind: 'evento'; id: string; text: string; areaId?: string; done: boolean; eventId: string; time?: string; slotIndex?: number };
 
 /**
- * Monta as prioridades do dia: prioridades manuais e eventos do calendário de hoje têm
- * preferência — sempre aparecem e ocupam as vagas do `limite` primeiro. Tasks e hábitos são
- * complemento: só entram se ainda sobrar vaga, na ordem 1) tasks alta/média vencidas ou de
- * hoje, 2) hábito agendado e ainda não votado da Área mais negligenciada, 3) tasks baixa
- * vencidas ou de hoje. Cada fonte já filtra o que está concluído/votado — assim que o usuário
- * resolve um item automático, ele sai da lista e o próximo candidato do pool assume a vaga.
+ * Monta as prioridades do dia a partir das 3 escolhas feitas no ritual da manhã (`vitorias`) —
+ * cada uma resolvida pro dado real (task/hábito/evento) ou mantida como texto manual — mais os
+ * eventos do calendário de hoje, que sempre aparecem à parte (não fazem parte dos 3 slots, mas
+ * um evento já escolhido como slot não se repete na lista). Slots que referenciam algo apagado
+ * (task/hábito/evento removido) ou ainda vazios são simplesmente ignorados.
  */
 export function computePrioridadesDoDia(params: {
   tasks: Task[];
   projects: Project[];
   habitos: Habito[];
-  manuais: PrioridadeManual[];
+  vitorias: PrioridadeRitual[];
   events: CalendarEvent[];
-  nutridoMap: Record<string, number>;
   hoje: string;
-  limite?: number;
 }): PrioridadeItem[] {
-  const { tasks, projects, habitos, manuais, events, nutridoMap, hoje, limite = 3 } = params;
+  const { tasks, projects, habitos, vitorias, events, hoje } = params;
 
   const areaDaTask = (t: Task) => projects.find(p => p.id === t.projectId)?.areaId;
 
-  const itemsManuais: PrioridadeItem[] = manuais
-    .filter(m => m.data === hoje)
-    .map(m => ({ kind: 'manual', id: m.id, text: m.text, areaId: m.areaId, done: m.done }));
-
-  const eventosHoje = events
-    .filter(e => e.date <= hoje && (e.endDate ?? e.date) >= hoje)
-    .sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99'));
-  const itemsEventos: PrioridadeItem[] = eventosHoje.map(e =>
-    ({ kind: 'evento', id: e.id, text: e.title, areaId: e.areaId, done: false, eventId: e.id, time: e.time }));
-
-  const items: PrioridadeItem[] = [...itemsManuais, ...itemsEventos];
-
-  const tasksAbertas = tasks.filter(t => t.status !== 'concluido' && t.dueDate !== undefined && t.dueDate <= hoje);
-  const altaMedia = ordenarTasks(tasksAbertas.filter(t => t.priority !== 'baixa'));
-  const baixa = ordenarTasks(tasksAbertas.filter(t => t.priority === 'baixa'));
-
-  const habitosPendentes = habitos
-    .filter(h => estaAgendadoEm(h, hoje) && !votouHoje(h, hoje))
-    .sort((a, b) => (nutridoMap[a.areaId] ?? 1) - (nutridoMap[b.areaId] ?? 1));
-
-  const taskToItem = (t: Task): PrioridadeItem =>
-    ({ kind: 'task', id: t.id, text: t.title, areaId: areaDaTask(t), done: false, taskId: t.id, priority: t.priority });
-  const habitoToItem = (h: Habito): PrioridadeItem =>
-    ({ kind: 'habito', id: h.id, text: h.acao, areaId: h.areaId, done: false, habitoId: h.id });
-
-  const pools: PrioridadeItem[][] = [
-    altaMedia.map(taskToItem),
-    habitosPendentes.map(habitoToItem),
-    baixa.map(taskToItem),
-  ];
-
-  for (const pool of pools) {
-    if (items.length >= limite) break;
-    for (const item of pool) {
-      if (items.length >= limite) break;
-      items.push(item);
+  const itemsSlots: PrioridadeItem[] = [];
+  vitorias.forEach((v, slotIndex) => {
+    if (v.origem === 'manual' && v.texto?.trim()) {
+      itemsSlots.push({ kind: 'manual', id: `slot-${slotIndex}`, text: v.texto, done: !!v.done, slotIndex });
+    } else if (v.origem === 'task' && v.taskId) {
+      const t = tasks.find(x => x.id === v.taskId);
+      if (t) itemsSlots.push({ kind: 'task', id: `slot-${slotIndex}`, text: t.title, areaId: areaDaTask(t), done: t.status === 'concluido', taskId: t.id, slotIndex });
+    } else if (v.origem === 'habito' && v.habitoId) {
+      const h = habitos.find(x => x.id === v.habitoId);
+      if (h) itemsSlots.push({ kind: 'habito', id: `slot-${slotIndex}`, text: h.acao, areaId: h.areaId, done: votouHoje(h, hoje), habitoId: h.id, slotIndex });
+    } else if (v.origem === 'evento' && v.eventoId) {
+      const e = events.find(x => x.id === v.eventoId);
+      if (e) itemsSlots.push({ kind: 'evento', id: `slot-${slotIndex}`, text: e.title, areaId: e.areaId, done: false, eventId: e.id, time: e.time, slotIndex });
     }
-  }
+  });
 
-  return items;
+  const idsEventosEmSlot = new Set(
+    itemsSlots.filter((i): i is Extract<PrioridadeItem, { kind: 'evento' }> => i.kind === 'evento').map(i => i.eventId)
+  );
+
+  const itemsEventos: PrioridadeItem[] = events
+    .filter(e => e.date <= hoje && (e.endDate ?? e.date) >= hoje && !idsEventosEmSlot.has(e.id))
+    .sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99'))
+    .map(e => ({ kind: 'evento', id: `evento-${e.id}`, text: e.title, areaId: e.areaId, done: false, eventId: e.id, time: e.time }));
+
+  return [...itemsSlots, ...itemsEventos];
 }

@@ -61,15 +61,6 @@ create table calendar_events (
   updated_at text not null
 );
 
-create table prioridades_manuais (
-  id text primary key,
-  text text not null,
-  area_id text,
-  done boolean not null default false,
-  data text not null,
-  created_at text not null
-);
-
 create table cronometro_presets (
   id text primary key,
   nome text not null,

@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import { AREAS } from '@/lib/data';
+import { PrioridadeRitual } from '@/lib/types';
 import { useHabitsStore } from '@/lib/habitsStore';
 import { useProjectsStore } from '@/lib/projectsStore';
-import { usePrioridadesStore } from '@/lib/prioridadesStore';
 import { useObjetivosStore } from '@/lib/objetivosStore';
 import { useCalendarStore } from '@/lib/calendarStore';
 import { useRituaisStore } from '@/lib/rituaisStore';
@@ -17,7 +17,8 @@ import { Hanko } from '@/components/ui/Hanko';
 import { AreaBadge } from '@/components/ui/AreaBadge';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Card } from '@/components/ui/Card';
-import { IcCheck, IcEdit, IcTrash, IcCalendar2 } from '@/components/ui/icons';
+import { IcCheck, IcEdit, IcCalendar2 } from '@/components/ui/icons';
+import PrioridadeSlotEditor from '@/components/ritual/PrioridadeSlotEditor';
 
 type HabitsStore = ReturnType<typeof useHabitsStore>;
 
@@ -26,7 +27,6 @@ interface HojeScreenProps {
   hour: number;
   habitsStore: HabitsStore;
   projectsStore: ReturnType<typeof useProjectsStore>;
-  prioridadesStore: ReturnType<typeof usePrioridadesStore>;
   objetivosStore: ReturnType<typeof useObjetivosStore>;
   calendarStore: ReturnType<typeof useCalendarStore>;
   rituaisStore: ReturnType<typeof useRituaisStore>;
@@ -174,25 +174,20 @@ const StreakSummaryInline = ({ habitos }: StreakCardProps) => {
   );
 };
 
-export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsStore, prioridadesStore, objetivosStore, calendarStore, rituaisStore, onIrParaRitual }: HojeScreenProps) {
+export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsStore, objetivosStore, calendarStore, rituaisStore, onIrParaRitual }: HojeScreenProps) {
   const [hoveredHabitoId, setHoveredHabitoId] = useState<string | null>(null);
-  const [addingPrioridade, setAddingPrioridade] = useState(false);
-  const [novaPrioridade, setNovaPrioridade] = useState('');
-  const [novaPrioridadeArea, setNovaPrioridadeArea] = useState<string | undefined>(undefined);
-  const [editingManualId, setEditingManualId] = useState<string | null>(null);
-  const [editText, setEditText] = useState('');
-  const [editArea, setEditArea] = useState<string | undefined>(undefined);
+  const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
+  const [editingSlotDraft, setEditingSlotDraft] = useState<PrioridadeRitual | null>(null);
   const [hoveredPrioridadeId, setHoveredPrioridadeId] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { habitos, votar } = habitsStore;
   const { projects, tasks, moveTask } = projectsStore;
-  const { manuais, addManual, toggleManual, updateManual, removeManual } = prioridadesStore;
   const { events } = calendarStore;
   const hojeStr = toDateStr(new Date());
   const habitosHoje = habitos.filter(h => estaAgendadoEm(h, hojeStr));
   const registroManha = rituaisStore.registroDe(hojeStr, 'manha');
   const registroNoite = rituaisStore.registroDe(hojeStr, 'noite');
+  const vitoriasHoje = registroManha?.vitorias ?? [];
 
   const isEvening = hour >= 20;
   const greeting = isEvening ? 'boa noite,' : 'bom dia,';
@@ -202,41 +197,37 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
   const neglectedAreaVista = areasVista.find(a => a.nutrido < 0.25);
 
   const prioridadeItems = computePrioridadesDoDia({
-    tasks, projects, habitos, manuais, events, nutridoMap, hoje: hojeStr,
+    tasks, projects, habitos, vitorias: vitoriasHoje, events, hoje: hojeStr,
   });
 
   const togglePrioridadeItem = (item: PrioridadeItem) => {
-    if (item.kind === 'manual') toggleManual(item.id);
-    else if (item.kind === 'task') moveTask(item.taskId, 'concluido');
-    else if (item.kind === 'habito') votar(item.habitoId);
+    if (item.kind === 'manual') {
+      const novo = [...vitoriasHoje];
+      novo[item.slotIndex] = { ...novo[item.slotIndex], done: !novo[item.slotIndex].done };
+      rituaisStore.atualizarVitorias(hojeStr, novo);
+    } else if (item.kind === 'task') {
+      moveTask(item.taskId, 'concluido');
+    } else if (item.kind === 'habito') {
+      votar(item.habitoId);
+    }
   };
 
-  const submitNovaPrioridade = () => {
-    const text = novaPrioridade.trim();
-    if (!text) return;
-    addManual({ text, areaId: novaPrioridadeArea, data: hojeStr });
-    setNovaPrioridade('');
-    setNovaPrioridadeArea(undefined);
-    setAddingPrioridade(false);
+  const startEditSlot = (slotIndex: number) => {
+    setEditingSlotIndex(slotIndex);
+    setEditingSlotDraft(vitoriasHoje[slotIndex] ?? { origem: 'manual', texto: '' });
   };
 
-  const startEditManual = (item: Extract<PrioridadeItem, { kind: 'manual' }>) => {
-    setEditingManualId(item.id);
-    setEditText(item.text);
-    setEditArea(item.areaId);
+  const cancelEditSlot = () => {
+    setEditingSlotIndex(null);
+    setEditingSlotDraft(null);
   };
 
-  const cancelEditManual = () => {
-    setEditingManualId(null);
-    setEditText('');
-    setEditArea(undefined);
-  };
-
-  const saveEditManual = () => {
-    const text = editText.trim();
-    if (!text || !editingManualId) return;
-    updateManual(editingManualId, { text, areaId: editArea });
-    cancelEditManual();
+  const saveEditSlot = () => {
+    if (editingSlotIndex === null || !editingSlotDraft) return;
+    const novo = [...vitoriasHoje];
+    novo[editingSlotIndex] = editingSlotDraft;
+    rituaisStore.atualizarVitorias(hojeStr, novo);
+    cancelEditSlot();
   };
 
   const areaColor = (areaId: string) => AREAS.find(a => a.id === areaId)?.color ?? 'var(--ink)';
@@ -517,60 +508,67 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
           {/* Prioridades */}
           <div>
             <SectionTitle kicker="Foco" title="Prioridades" jp="今日" />
+
+            {!registroManha && (
+              <div style={{
+                padding: '14px 16px', borderRadius: 6, marginBottom: 12,
+                border: '1px dashed rgba(27,54,93,0.2)', background: 'rgba(255,255,255,0.5)',
+              }}>
+                <p style={{ fontSize: 13, color: 'var(--char-soft)', margin: '0 0 10px', lineHeight: 1.5 }}>
+                  Suas 3 prioridades de hoje nascem no ritual da manhã.
+                </p>
+                <button
+                  onClick={onIrParaRitual}
+                  style={{ padding: '7px 14px', background: 'var(--ink)', color: 'var(--washi)', borderRadius: 5, fontSize: 12, fontWeight: 500 }}
+                >
+                  Fazer o ritual da manhã
+                </button>
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {prioridadeItems.length === 0 && (
+              {prioridadeItems.length === 0 && registroManha && (
                 <p style={{ fontSize: 13, color: 'var(--char-mute)', fontStyle: 'italic', margin: 0 }}>
                   nada puxando a atenção agora — dia livre
                 </p>
               )}
               {prioridadeItems.map((item, idx) => {
-                if (item.kind === 'manual' && editingManualId === item.id) {
+                const editavel = item.slotIndex !== undefined;
+
+                if (editavel && editingSlotIndex === item.slotIndex && editingSlotDraft) {
+                  const podeSalvar =
+                    (editingSlotDraft.origem === 'manual' && !!editingSlotDraft.texto?.trim()) ||
+                    (editingSlotDraft.origem === 'evento' && !!editingSlotDraft.eventoId) ||
+                    (editingSlotDraft.origem === 'task' && !!editingSlotDraft.taskId) ||
+                    (editingSlotDraft.origem === 'habito' && !!editingSlotDraft.habitoId);
+
                   return (
                     <div key={item.id} style={{
                       padding: '12px 14px', borderRadius: 6,
                       border: '1px solid rgba(27,54,93,0.15)', background: 'rgba(255,255,255,0.7)',
-                      display: 'flex', flexDirection: 'column', gap: 10,
                     }}>
-                      <input
+                      <PrioridadeSlotEditor
+                        value={editingSlotDraft}
+                        onChange={setEditingSlotDraft}
+                        hoje={hojeStr}
+                        eventos={events}
+                        tasks={tasks}
+                        projects={projects}
+                        habitos={habitos}
                         autoFocus
-                        value={editText}
-                        onChange={e => setEditText(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') saveEditManual(); if (e.key === 'Escape') cancelEditManual(); }}
-                        style={{
-                          width: '100%', border: 'none', background: 'transparent',
-                          fontSize: 13.5, color: 'var(--char)', fontFamily: 'inherit',
-                        }}
                       />
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        {AREAS.map(a => {
-                          const active = editArea === a.id;
-                          return (
-                            <button
-                              key={a.id}
-                              onClick={() => setEditArea(active ? undefined : a.id)}
-                              title={a.name}
-                              style={{
-                                width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
-                                background: a.color,
-                                border: active ? '2px solid var(--char)' : '2px solid transparent',
-                                opacity: active ? 1 : 0.45,
-                                cursor: 'pointer', transition: 'all 0.12s',
-                              }}
-                            />
-                          );
-                        })}
-                        <div style={{ flex: 1 }} />
-                        <button onClick={cancelEditManual} style={{ fontSize: 12, color: 'var(--char-mute)', padding: '5px 8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 10 }}>
+                        <button onClick={cancelEditSlot} style={{ fontSize: 12, color: 'var(--char-mute)', padding: '5px 8px' }}>
                           cancelar
                         </button>
                         <button
-                          disabled={!editText.trim()}
-                          onClick={saveEditManual}
+                          disabled={!podeSalvar}
+                          onClick={saveEditSlot}
                           style={{
                             padding: '6px 14px', fontSize: 12, fontWeight: 500, borderRadius: 4,
-                            background: editText.trim() ? 'var(--ink)' : 'rgba(27,54,93,0.2)',
+                            background: podeSalvar ? 'var(--ink)' : 'rgba(27,54,93,0.2)',
                             color: 'var(--washi)',
-                            cursor: editText.trim() ? 'pointer' : 'default',
+                            cursor: podeSalvar ? 'pointer' : 'default',
                           }}
                         >
                           salvar
@@ -580,14 +578,12 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
                   );
                 }
 
-                const isManual = item.kind === 'manual';
-                const showActions = isManual && hoveredPrioridadeId === item.id;
-                const confirmingDelete = isManual && confirmDeleteId === item.id;
+                const showEditButton = editavel && hoveredPrioridadeId === item.id;
 
                 return (
                   <div
                     key={item.id}
-                    onMouseEnter={() => isManual && setHoveredPrioridadeId(item.id)}
+                    onMouseEnter={() => editavel && setHoveredPrioridadeId(item.id)}
                     onMouseLeave={() => setHoveredPrioridadeId(null)}
                     style={{
                       display: 'flex',
@@ -624,44 +620,19 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
                           {item.kind === 'task' ? 'de Projetos'
                             : item.kind === 'habito' ? 'hábito do dia'
                             : item.kind === 'evento' ? (item.time ? `evento às ${item.time}` : 'evento de hoje')
-                            : 'adicionada por você'}
+                            : 'prioridade do dia'}
                         </span>
                       </div>
                     </div>
 
-                    {confirmingDelete ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                        <span style={{ fontSize: 10.5, color: 'var(--hanko)' }}>apagar?</span>
-                        <button
-                          onClick={() => { removeManual(item.id); setConfirmDeleteId(null); }}
-                          style={{ fontSize: 11, fontWeight: 600, color: 'var(--hanko)', padding: '2px 6px' }}
-                        >
-                          sim
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(null)}
-                          style={{ fontSize: 11, color: 'var(--char-mute)', padding: '2px 6px' }}
-                        >
-                          não
-                        </button>
-                      </div>
-                    ) : showActions ? (
-                      <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-                        <button
-                          onClick={() => startEditManual(item)}
-                          title="editar"
-                          style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--char-mute)' }}
-                        >
-                          <IcEdit size={13} stroke="var(--char-mute)" />
-                        </button>
-                        <button
-                          onClick={() => setConfirmDeleteId(item.id)}
-                          title="apagar"
-                          style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--hanko)' }}
-                        >
-                          <IcTrash size={13} stroke="var(--hanko)" />
-                        </button>
-                      </div>
+                    {showEditButton ? (
+                      <button
+                        onClick={() => startEditSlot(item.slotIndex!)}
+                        title="editar"
+                        style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--char-mute)', flexShrink: 0 }}
+                      >
+                        <IcEdit size={13} stroke="var(--char-mute)" />
+                      </button>
                     ) : (
                       <span style={{
                         fontSize: 11,
@@ -680,75 +651,6 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
                 );
               })}
             </div>
-
-            {/* Add manual priority */}
-            {addingPrioridade ? (
-              <div style={{
-                marginTop: 10, padding: '12px 14px', borderRadius: 6,
-                border: '1px solid rgba(27,54,93,0.15)', background: 'rgba(255,255,255,0.6)',
-                display: 'flex', flexDirection: 'column', gap: 10,
-              }}>
-                <input
-                  autoFocus
-                  value={novaPrioridade}
-                  onChange={e => setNovaPrioridade(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') submitNovaPrioridade(); if (e.key === 'Escape') setAddingPrioridade(false); }}
-                  placeholder="o que precisa entrar na lista de hoje?"
-                  style={{
-                    width: '100%', border: 'none', background: 'transparent',
-                    fontSize: 13.5, color: 'var(--char)', fontFamily: 'inherit',
-                  }}
-                />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  {AREAS.map(a => {
-                    const active = novaPrioridadeArea === a.id;
-                    return (
-                      <button
-                        key={a.id}
-                        onClick={() => setNovaPrioridadeArea(active ? undefined : a.id)}
-                        title={a.name}
-                        style={{
-                          width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
-                          background: a.color,
-                          border: active ? '2px solid var(--char)' : '2px solid transparent',
-                          opacity: active ? 1 : 0.45,
-                          cursor: 'pointer', transition: 'all 0.12s',
-                        }}
-                      />
-                    );
-                  })}
-                  <div style={{ flex: 1 }} />
-                  <button
-                    onClick={() => setAddingPrioridade(false)}
-                    style={{ fontSize: 12, color: 'var(--char-mute)', padding: '5px 8px' }}
-                  >
-                    cancelar
-                  </button>
-                  <button
-                    disabled={!novaPrioridade.trim()}
-                    onClick={submitNovaPrioridade}
-                    style={{
-                      padding: '6px 14px', fontSize: 12, fontWeight: 500, borderRadius: 4,
-                      background: novaPrioridade.trim() ? 'var(--ink)' : 'rgba(27,54,93,0.2)',
-                      color: 'var(--washi)',
-                      cursor: novaPrioridade.trim() ? 'pointer' : 'default',
-                    }}
-                  >
-                    adicionar
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                onClick={() => setAddingPrioridade(true)}
-                style={{
-                  marginTop: 10, fontSize: 12.5, color: 'var(--char-mute)',
-                  padding: '6px 4px', textAlign: 'left',
-                }}
-              >
-                + adicionar prioridade
-              </button>
-            )}
           </div>
         </div>
       </div>

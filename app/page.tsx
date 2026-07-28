@@ -15,7 +15,6 @@ import ObjetivosScreen from '@/components/objetivos/ObjetivosScreen';
 import { useProjectsStore } from '@/lib/projectsStore';
 import { useCalendarStore } from '@/lib/calendarStore';
 import { useHabitsStore } from '@/lib/habitsStore';
-import { usePrioridadesStore } from '@/lib/prioridadesStore';
 import { useCronometrosStore } from '@/lib/cronometrosStore';
 import { useCronometroSessao } from '@/lib/cronometroSessaoStore';
 import { useObjetivosStore } from '@/lib/objetivosStore';
@@ -35,7 +34,6 @@ export default function Home() {
   const store = useProjectsStore();
   const calendarStore = useCalendarStore();
   const habitsStore = useHabitsStore();
-  const prioridadesStore = usePrioridadesStore();
   const cronometrosStore = useCronometrosStore();
   const cronometroSessao = useCronometroSessao();
   const objetivosStore = useObjetivosStore();
@@ -46,8 +44,7 @@ export default function Home() {
   const didCheckIn = !!rituaisStore.registroDe(hojeStr, 'manha');
 
   const erroConexao = store.erro || calendarStore.erro || habitsStore.erro
-    || prioridadesStore.erro || cronometrosStore.erro || objetivosStore.erro
-    || rituaisStore.erro;
+    || cronometrosStore.erro || objetivosStore.erro || rituaisStore.erro;
   const falhasGravacao = useFalhasDeGravacao();
 
   useEffect(() => {
@@ -152,7 +149,6 @@ export default function Home() {
             hour={hour}
             habitsStore={habitsStore}
             projectsStore={store}
-            prioridadesStore={prioridadesStore}
             objetivosStore={objetivosStore}
             calendarStore={calendarStore}
           />
@@ -182,7 +178,9 @@ export default function Home() {
         {screen === 'calendario' && (
           <CalendarioScreen calendarStore={calendarStore} projectsStore={store} />
         )}
-        {screen === 'ritual'      && <RitualScreen habitsStore={habitsStore} rituaisStore={rituaisStore} />}
+        {screen === 'ritual'      && (
+          <RitualScreen habitsStore={habitsStore} rituaisStore={rituaisStore} projectsStore={store} calendarStore={calendarStore} />
+        )}
         {screen === 'habitos'     && <HabitosScreen store={habitsStore} />}
         {screen === 'cronometros' && (
           <CronometrosScreen cronometrosStore={cronometrosStore} sessaoStore={cronometroSessao} />
