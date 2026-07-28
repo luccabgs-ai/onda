@@ -130,6 +130,9 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
         border: '1px solid rgba(27,54,93,0.18)',
         borderRadius: 8,
         width: 'min(640px, 100%)',
+        maxHeight: '90vh',
+        display: 'flex',
+        flexDirection: 'column',
         position: 'relative',
         boxShadow: '0 30px 80px -20px rgba(20,38,74,0.45)',
         overflow: 'hidden',
@@ -140,6 +143,7 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
           borderBottom: '1px solid rgba(27,54,93,0.08)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           background: morning ? 'rgba(245,239,224,0.5)' : 'rgba(27,54,93,0.04)',
+          flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {morning
@@ -172,7 +176,7 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
         </div>
 
         {/* Progress bar */}
-        <div style={{ padding: '14px 28px 0', display: 'flex', gap: 6 }}>
+        <div style={{ padding: '14px 28px 0', display: 'flex', gap: 6, flexShrink: 0 }}>
           {cfg.steps.map((_, i) => (
             <div key={i} style={{
               flex: 1, height: 2,
@@ -185,7 +189,7 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
 
         {/* Step body */}
         {!done && (
-          <div key={step} style={{ padding: '28px 32px 8px', minHeight: 280 }}>
+          <div key={step} style={{ padding: '28px 32px 8px', minHeight: 280, flex: 1, overflowY: 'auto' }}>
             <div style={{
               fontSize: 11, color: 'var(--char-mute)',
               letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8,
@@ -279,6 +283,7 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
             padding: '16px 28px',
             borderTop: '1px solid rgba(27,54,93,0.08)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            flexShrink: 0,
           }}>
             <button
               onClick={() => step > 0 ? setStep(step - 1) : onClose()}

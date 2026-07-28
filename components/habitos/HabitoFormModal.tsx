@@ -123,6 +123,9 @@ export default function HabitoFormModal({ habito, habitosExistentes, onClose, on
           border: '1px solid rgba(27,54,93,0.18)',
           borderRadius: 8,
           width: 'min(620px, 100%)',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
           boxShadow: '0 30px 80px -20px rgba(20,38,74,0.45)',
           overflow: 'hidden',
         }}
@@ -133,6 +136,7 @@ export default function HabitoFormModal({ habito, habitosExistentes, onClose, on
           borderBottom: '1px solid rgba(27,54,93,0.08)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           background: 'rgba(245,239,224,0.5)',
+          flexShrink: 0,
         }}>
           <div>
             <div style={{ fontSize: 11, color: 'var(--char-mute)', letterSpacing: '0.16em', textTransform: 'uppercase' }}>
@@ -148,14 +152,14 @@ export default function HabitoFormModal({ habito, habitosExistentes, onClose, on
         </div>
 
         {/* Progress */}
-        <div style={{ padding: '14px 28px 0', display: 'flex', gap: 6 }}>
+        <div style={{ padding: '14px 28px 0', display: 'flex', gap: 6, flexShrink: 0 }}>
           {steps.map((_, i) => (
             <div key={i} style={{ flex: 1, height: 2, background: i <= step ? 'var(--ink)' : 'rgba(27,54,93,0.12)', borderRadius: 999, transition: 'background 0.35s' }} />
           ))}
         </div>
 
         {/* Body */}
-        <div key={step} style={{ padding: '28px 32px 8px', minHeight: 280 }}>
+        <div key={step} style={{ padding: '28px 32px 8px', minHeight: 280, flex: 1, overflowY: 'auto' }}>
           <div style={{ fontSize: 11, color: 'var(--char-mute)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8 }}>
             passo {step + 1} de {steps.length}
           </div>
@@ -442,7 +446,7 @@ export default function HabitoFormModal({ habito, habitosExistentes, onClose, on
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 28px', borderTop: '1px solid rgba(27,54,93,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '16px 28px', borderTop: '1px solid rgba(27,54,93,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <button onClick={() => step > 0 ? setStep(step - 1) : onClose()} style={{ fontSize: 12, color: 'var(--char-mute)', padding: '6px 8px' }}>
             {step === 0 ? 'cancelar' : '← voltar'}
           </button>
