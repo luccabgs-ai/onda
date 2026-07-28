@@ -10,6 +10,7 @@ import { useRituaisStore } from '@/lib/rituaisStore';
 import { computeNutridoMap, votouHoje, estaAgendadoEm, toDateStr } from '@/lib/nutricao';
 import { computePrioridadesDoDia, PrioridadeItem } from '@/lib/prioridades';
 import { montarAreasVista } from '@/lib/areasStats';
+import { progressoDeMeta, progressoDoObjetivo } from '@/lib/metas';
 
 import { Bussola } from './Bussola';
 import { EnergyScale } from './EnergyScale';
@@ -31,6 +32,7 @@ interface HojeScreenProps {
   calendarStore: ReturnType<typeof useCalendarStore>;
   rituaisStore: ReturnType<typeof useRituaisStore>;
   onIrParaRitual: () => void;
+  onIrParaObjetivos: () => void;
 }
 
 const SectionTitle = ({
@@ -174,7 +176,7 @@ const StreakSummaryInline = ({ habitos }: StreakCardProps) => {
   );
 };
 
-export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsStore, objetivosStore, calendarStore, rituaisStore, onIrParaRitual }: HojeScreenProps) {
+export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsStore, objetivosStore, calendarStore, rituaisStore, onIrParaRitual, onIrParaObjetivos }: HojeScreenProps) {
   const [hoveredHabitoId, setHoveredHabitoId] = useState<string | null>(null);
   const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
   const [editingSlotDraft, setEditingSlotDraft] = useState<PrioridadeRitual | null>(null);
@@ -195,6 +197,17 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
   const nutridoMap = computeNutridoMap(habitos, AREAS);
   const areasVista = montarAreasVista(AREAS, habitos, projects, tasks, objetivosStore.objetivos, objetivosStore.metas);
   const neglectedAreaVista = areasVista.find(a => a.nutrido < 0.25);
+
+  const objetivosVisao = objetivosStore.objetivos
+    .filter(o => o.status === 'ativo')
+    .map(o => {
+      const metasDoObjetivo = objetivosStore.metas.filter(m => m.objetivoId === o.id);
+      const { concluidas, total } = progressoDoObjetivo(metasDoObjetivo, habitos);
+      const progresso = total > 0
+        ? metasDoObjetivo.reduce((soma, m) => soma + progressoDeMeta(m, habitos), 0) / total
+        : 0;
+      return { objetivo: o, concluidas, total, progresso };
+    });
 
   const prioridadeItems = computePrioridadesDoDia({
     tasks, projects, habitos, vitorias: vitoriasHoje, events, hoje: hojeStr,
@@ -653,6 +666,58 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── OBJETIVOS — progresso dos objetivos ativos ── */}
+      <div style={{ marginBottom: 36 }}>
+        <SectionTitle kicker="Direção" title="Objetivos" jp="目標" />
+        {objetivosVisao.length === 0 ? (
+          <p style={{ fontSize: 13, color: 'var(--char-mute)', fontStyle: 'italic', margin: 0 }}>
+            nenhum objetivo ativo ainda — crie um na aba Objetivos pra acompanhar o progresso aqui
+          </p>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+            {objetivosVisao.map(({ objetivo, concluidas, total, progresso }) => {
+              const area = AREAS.find(a => a.id === objetivo.areaId);
+              const color = area?.color ?? 'var(--ink)';
+              const concluido = total > 0 && concluidas === total;
+              return (
+                <div
+                  key={objetivo.id}
+                  onClick={onIrParaObjetivos}
+                  style={{
+                    cursor: 'pointer',
+                    padding: '14px 16px',
+                    borderRadius: 6,
+                    border: '1px solid rgba(27,54,93,0.1)',
+                    borderLeft: `3px solid ${color}`,
+                    background: 'rgba(255,255,255,0.6)',
+                    transition: 'background 0.15s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                    <span className="serif" style={{ fontSize: 14.5, color: 'var(--ink)', fontWeight: 500, fontStyle: 'italic', flex: 1, minWidth: 0 }}>
+                      {objetivo.titulo}
+                    </span>
+                    {area && <AreaBadge areaId={area.id} small />}
+                  </div>
+                  <div style={{ height: 4, borderRadius: 2, background: 'rgba(27,54,93,0.08)', overflow: 'hidden', marginBottom: 6 }}>
+                    <div style={{
+                      height: '100%',
+                      width: `${progresso * 100}%`,
+                      background: concluido ? 'var(--moss)' : color,
+                      borderRadius: 2,
+                      transition: 'width 0.3s ease',
+                    }} />
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--char-mute)' }}>
+                    {total === 0 ? 'nenhuma meta ainda' : `${concluidas}/${total} metas concluídas`}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ── Check-in/out card ── */}

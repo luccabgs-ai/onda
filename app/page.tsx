@@ -146,6 +146,7 @@ export default function Home() {
             dataExtensa={dataExtensa}
             rituaisStore={rituaisStore}
             onIrParaRitual={() => setScreen('ritual')}
+            onIrParaObjetivos={() => setScreen('objetivos')}
             hour={hour}
             habitsStore={habitsStore}
             projectsStore={store}
