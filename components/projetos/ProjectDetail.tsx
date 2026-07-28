@@ -504,6 +504,15 @@ export default function ProjectDetail({ project: initialProject, onBack, store }
               {project.title}
             </h1>
             {project.areaId && <AreaBadge areaId={project.areaId} small />}
+            {project.dueDate && (
+              <span style={{
+                fontSize: 11, flexShrink: 0,
+                color: isPastDue(project.dueDate) ? 'var(--hanko)' : 'var(--char-mute)',
+                fontWeight: isPastDue(project.dueDate) ? 600 : 400,
+              }}>
+                prazo {formatDateLabel(project.dueDate)}
+              </span>
+            )}
           </div>
           {project.description && (
             <p style={{ fontSize: 12, color: 'var(--char-mute)', margin: '2px 0 0', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

@@ -94,6 +94,7 @@ export interface Project {
   description?: string;
   color: string;
   areaId?: string;
+  dueDate?: string;
   createdAt: string;
   updatedAt: string;
 }

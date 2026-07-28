@@ -8,6 +8,7 @@ interface ProjectRow {
   description: string | null;
   color: string;
   area_id: string | null;
+  due_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -33,6 +34,7 @@ function rowToProject(row: ProjectRow): Project {
     description: row.description ?? undefined,
     color: row.color,
     areaId: row.area_id ?? undefined,
+    dueDate: row.due_date ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -76,6 +78,7 @@ export async function POST(request: NextRequest) {
     description: body.description ?? null,
     color: body.color,
     area_id: body.areaId ?? null,
+    due_date: body.dueDate ?? null,
     created_at: body.createdAt,
     updated_at: body.updatedAt,
   });

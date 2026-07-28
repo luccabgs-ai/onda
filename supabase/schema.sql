@@ -7,6 +7,7 @@ create table projects (
   description text,
   color text not null,
   area_id text,
+  due_date text,
   created_at text not null,
   updated_at text not null
 );

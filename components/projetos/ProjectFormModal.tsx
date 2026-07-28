@@ -29,13 +29,20 @@ export default function ProjectFormModal({ project, onClose, onSave }: ProjectFo
   const [description, setDescription] = useState(project?.description ?? '');
   const [color, setColor] = useState(project?.color ?? PRESET_COLORS[0]);
   const [areaId, setAreaId] = useState(project?.areaId ?? '');
+  const [dueDate, setDueDate] = useState(project?.dueDate ?? '');
 
   const isEdit = !!project;
   const canSave = title.trim().length > 0;
 
   const handleSave = () => {
     if (!canSave) return;
-    onSave({ title: title.trim(), description: description.trim() || undefined, color, areaId: areaId || undefined });
+    onSave({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      color,
+      areaId: areaId || undefined,
+      dueDate: dueDate || undefined,
+    });
   };
 
   return (
@@ -181,6 +188,19 @@ export default function ProjectFormModal({ project, onClose, onSave }: ProjectFo
                 );
               })}
             </div>
+          </div>
+
+          {/* Due Date */}
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: 'var(--char-soft)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+              Prazo
+            </label>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={e => setDueDate(e.target.value)}
+              style={{ ...inputStyle, padding: '8px 12px' }}
+            />
           </div>
 
           {/* Color */}

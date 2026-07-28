@@ -3,9 +3,15 @@ import React, { useState } from 'react';
 import { Project } from '@/lib/types';
 import { useProjectsStore } from '@/lib/projectsStore';
 import { AREAS } from '@/lib/data';
+import { toDateStr } from '@/lib/nutricao';
 import { Card } from '@/components/ui/Card';
 import { IcKanban } from '@/components/ui/icons';
 import ProjectFormModal from './ProjectFormModal';
+
+function formatarPrazo(dataStr: string): string {
+  const d = new Date(dataStr + 'T12:00:00');
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}
 
 interface ProjetosScreenProps {
   onOpenProject: (project: Project) => void;
@@ -126,6 +132,7 @@ function ProjectCard({
   const done = pt.filter(t => t.status === 'concluido').length;
   const progress = pt.length > 0 ? done / pt.length : 0;
   const area = project.areaId ? AREAS.find(a => a.id === project.areaId) : undefined;
+  const prazoAtrasado = !!project.dueDate && project.dueDate < toDateStr(new Date());
 
   return (
     <Card
@@ -156,8 +163,13 @@ function ProjectCard({
             {project.description}
           </p>
         )}
-        <div style={{ fontSize: 12, color: 'var(--char-mute)', marginBottom: 10 }}>
-          {pt.length} {pt.length === 1 ? 'tarefa' : 'tarefas'} · {done} concluída{done !== 1 ? 's' : ''}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--char-mute)', marginBottom: 10, flexWrap: 'wrap' }}>
+          <span>{pt.length} {pt.length === 1 ? 'tarefa' : 'tarefas'} · {done} concluída{done !== 1 ? 's' : ''}</span>
+          {project.dueDate && (
+            <span style={{ color: prazoAtrasado ? 'var(--hanko)' : 'var(--char-mute)', fontWeight: prazoAtrasado ? 600 : 400 }}>
+              · prazo {formatarPrazo(project.dueDate)}
+            </span>
+          )}
         </div>
         <div style={{ height: 4, background: 'rgba(27,54,93,0.10)', borderRadius: 999, overflow: 'hidden' }}>
           <div style={{

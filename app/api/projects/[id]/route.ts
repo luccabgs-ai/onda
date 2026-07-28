@@ -10,6 +10,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if ('description' in body) patch.description = body.description ?? null;
   if ('color' in body) patch.color = body.color;
   if ('areaId' in body) patch.area_id = body.areaId ?? null;
+  if ('dueDate' in body) patch.due_date = body.dueDate ?? null;
   patch.updated_at = new Date().toISOString();
 
   const { error } = await db.from('projects').update(patch).eq('id', id);
