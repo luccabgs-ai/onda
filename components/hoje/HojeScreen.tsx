@@ -435,7 +435,7 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
                       )}
                       {agendado && !h.horario && (nutridoMap[h.areaId] ?? 1) < LIMIAR_AREA_NEGLIGENCIADA && (
                         <span title="área em baixa" style={{ display: 'flex', alignItems: 'center', opacity: votado ? 0.6 : 1 }}>
-                          <IcAlert size={13} stroke="var(--hanko)" sw={2.2} />
+                          <IcAlert size={17} stroke="var(--hanko)" sw={2.2} />
                         </span>
                       )}
                       <span>{h.acao}</span>
