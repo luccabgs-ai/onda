@@ -18,7 +18,7 @@ import { Hanko } from '@/components/ui/Hanko';
 import { AreaBadge } from '@/components/ui/AreaBadge';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Card } from '@/components/ui/Card';
-import { IcCheck, IcEdit, IcCalendar2 } from '@/components/ui/icons';
+import { IcCheck, IcEdit, IcCalendar2, IcAlert } from '@/components/ui/icons';
 import PrioridadeSlotEditor from '@/components/ritual/PrioridadeSlotEditor';
 
 type HabitsStore = ReturnType<typeof useHabitsStore>;
@@ -434,12 +434,8 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
                         </span>
                       )}
                       {agendado && !h.horario && (nutridoMap[h.areaId] ?? 1) < LIMIAR_AREA_NEGLIGENCIADA && (
-                        <span style={{
-                          display: 'flex', alignItems: 'center', gap: 4,
-                          fontSize: 10.5, fontWeight: 600, color: 'var(--hanko)', opacity: votado ? 0.6 : 0.85,
-                        }}>
-                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--hanko)', flexShrink: 0 }} />
-                          área em baixa
+                        <span title="área em baixa" style={{ display: 'flex', alignItems: 'center', opacity: votado ? 0.6 : 1 }}>
+                          <IcAlert size={13} stroke="var(--hanko)" sw={2.2} />
                         </span>
                       )}
                       <span>{h.acao}</span>

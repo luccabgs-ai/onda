@@ -58,6 +58,13 @@ export const IcArrowR = ({ size = 16, stroke = 'currentColor', sw = 1.5 }: IconP
   </svg>
 );
 
+export const IcAlert = ({ size = 16, stroke = 'currentColor', sw = 2 }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="7" x2="12" y2="13.5" />
+    <circle cx="12" cy="17.2" r="0.6" fill={stroke} stroke="none" />
+  </svg>
+);
+
 export const IcHabito = ({ size = 20, stroke = 'currentColor', sw = 1.5 }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 12a8 8 0 0 1 14-5.3" />
