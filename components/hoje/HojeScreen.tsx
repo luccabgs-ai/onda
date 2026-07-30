@@ -371,7 +371,15 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
             {[...habitos]
-              .sort((a, b) => Number(estaAgendadoEm(b, hojeStr)) - Number(estaAgendadoEm(a, hojeStr)))
+              .sort((a, b) => {
+                // 1) agendados hoje primeiro; 2) dentro desse grupo, quem tem horário definido
+                // vem em ordem cronológica — uma linha do tempo do dia; 3) sem horário, por último.
+                const agendadoDiff = Number(estaAgendadoEm(b, hojeStr)) - Number(estaAgendadoEm(a, hojeStr));
+                if (agendadoDiff !== 0) return agendadoDiff;
+                if (!!a.horario !== !!b.horario) return a.horario ? -1 : 1;
+                if (a.horario && b.horario) return a.horario.localeCompare(b.horario);
+                return 0;
+              })
               .map((h) => {
                 const color = areaColor(h.areaId);
                 const votado = votouHoje(h);
@@ -419,6 +427,11 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
                       }}>
                         {votado && <IcCheck size={agendado ? 11 : 9} stroke={agendado ? 'white' : color} sw={agendado ? 3 : 2.5} />}
                       </span>
+                      {agendado && h.horario && (
+                        <span style={{ fontSize: 11.5, fontWeight: 700, opacity: votado ? 0.85 : 0.7 }}>
+                          {h.horario}
+                        </span>
+                      )}
                       <span>{h.acao}</span>
                     </button>
 
