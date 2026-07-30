@@ -12,6 +12,9 @@ function addDays(dateStr: string, delta: number): string {
 export const DOW_LABELS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 export const TODOS_OS_DIAS = [0, 1, 2, 3, 4, 5, 6];
 
+/** Abaixo disso, uma Área é considerada negligenciada (nudge da Hoje, card de Áreas, ordenação de hábitos). */
+export const LIMIAR_AREA_NEGLIGENCIADA = 0.25;
+
 /** Hábitos criados antes desse campo existir contam como "todo dia". */
 function diasSemanaDe(habito: Habito): number[] {
   return habito.diasSemana ?? TODOS_OS_DIAS;

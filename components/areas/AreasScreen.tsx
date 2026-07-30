@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Habito, Meta, Objetivo, Project, Task } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { AreaVista, montarAreasVista } from '@/lib/areasStats';
+import { LIMIAR_AREA_NEGLIGENCIADA } from '@/lib/nutricao';
 import { AREA_ICONS, IcClose } from '@/components/ui/icons';
 import { Card } from '@/components/ui/Card';
 
@@ -47,7 +48,7 @@ const ArcProgress = ({ value, color }: { value: number; color: string }) => {
 // ── Single area card ─────────────────────────────────────────────────────────
 const AreaCard = ({ area, onOpen }: { area: AreaVista; onOpen: (a: AreaVista) => void }) => {
   const Icon = AREA_ICONS[area.id];
-  const isNeglected = area.nutrido < 0.3;
+  const isNeglected = area.nutrido < LIMIAR_AREA_NEGLIGENCIADA;
   const [hovered, setHovered] = useState(false);
 
   return (

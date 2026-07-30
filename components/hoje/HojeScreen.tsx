@@ -7,7 +7,7 @@ import { useProjectsStore } from '@/lib/projectsStore';
 import { useObjetivosStore } from '@/lib/objetivosStore';
 import { useCalendarStore } from '@/lib/calendarStore';
 import { useRituaisStore } from '@/lib/rituaisStore';
-import { computeNutridoMap, votouHoje, estaAgendadoEm, toDateStr } from '@/lib/nutricao';
+import { computeNutridoMap, votouHoje, estaAgendadoEm, toDateStr, LIMIAR_AREA_NEGLIGENCIADA } from '@/lib/nutricao';
 import { computePrioridadesDoDia, PrioridadeItem } from '@/lib/prioridades';
 import { montarAreasVista } from '@/lib/areasStats';
 import { progressoDeMeta, progressoDoObjetivo } from '@/lib/metas';
@@ -196,7 +196,7 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
 
   const nutridoMap = computeNutridoMap(habitos, AREAS);
   const areasVista = montarAreasVista(AREAS, habitos, projects, tasks, objetivosStore.objetivos, objetivosStore.metas);
-  const neglectedAreaVista = areasVista.find(a => a.nutrido < 0.25);
+  const neglectedAreaVista = areasVista.find(a => a.nutrido < LIMIAR_AREA_NEGLIGENCIADA);
 
   const objetivosVisao = objetivosStore.objetivos
     .filter(o => o.status === 'ativo')
@@ -373,12 +373,13 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
             {[...habitos]
               .sort((a, b) => {
                 // 1) agendados hoje primeiro; 2) dentro desse grupo, quem tem horário definido
-                // vem em ordem cronológica — uma linha do tempo do dia; 3) sem horário, por último.
+                // vem em ordem cronológica — uma linha do tempo do dia; 3) entre os sem horário,
+                // a área mais negligenciada primeiro — puxa o olho pro que está sendo esquecido.
                 const agendadoDiff = Number(estaAgendadoEm(b, hojeStr)) - Number(estaAgendadoEm(a, hojeStr));
                 if (agendadoDiff !== 0) return agendadoDiff;
                 if (!!a.horario !== !!b.horario) return a.horario ? -1 : 1;
                 if (a.horario && b.horario) return a.horario.localeCompare(b.horario);
-                return 0;
+                return (nutridoMap[a.areaId] ?? 1) - (nutridoMap[b.areaId] ?? 1);
               })
               .map((h) => {
                 const color = areaColor(h.areaId);
@@ -430,6 +431,15 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
                       {agendado && h.horario && (
                         <span style={{ fontSize: 11.5, fontWeight: 700, opacity: votado ? 0.85 : 0.7 }}>
                           {h.horario}
+                        </span>
+                      )}
+                      {agendado && !h.horario && (nutridoMap[h.areaId] ?? 1) < LIMIAR_AREA_NEGLIGENCIADA && (
+                        <span style={{
+                          display: 'flex', alignItems: 'center', gap: 4,
+                          fontSize: 10.5, fontWeight: 600, color: 'var(--hanko)', opacity: votado ? 0.6 : 0.85,
+                        }}>
+                          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--hanko)', flexShrink: 0 }} />
+                          área em baixa
                         </span>
                       )}
                       <span>{h.acao}</span>
