@@ -66,6 +66,7 @@ create table cronometro_presets (
   nome text not null,
   fases jsonb not null,
   area_id text,
+  habito_id text,
   pronto boolean not null default false,
   criado_em text not null,
   atualizado_em text not null

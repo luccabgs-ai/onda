@@ -4,6 +4,7 @@ import { CronometroPreset } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { useCronometrosStore, duracaoTotalMin } from '@/lib/cronometrosStore';
 import { useCronometroSessao } from '@/lib/cronometroSessaoStore';
+import { useHabitsStore } from '@/lib/habitsStore';
 import { playBeep } from '@/lib/cronometroSom';
 import { IcClose } from '@/components/ui/icons';
 
@@ -23,6 +24,7 @@ interface Toast {
 interface Props {
   cronometrosStore: ReturnType<typeof useCronometrosStore>;
   sessaoStore: ReturnType<typeof useCronometroSessao>;
+  habitsStore: ReturnType<typeof useHabitsStore>;
   onAbrirCronometros: () => void;
 }
 
@@ -32,9 +34,10 @@ interface Props {
  * isso só acontecia enquanto a tela de Cronômetros estava montada. Quando o tempo estoura,
  * mostra um aviso flutuante em qualquer lugar do app.
  */
-export default function CronometroNotificacao({ cronometrosStore, sessaoStore, onAbrirCronometros }: Props) {
+export default function CronometroNotificacao({ cronometrosStore, sessaoStore, habitsStore, onAbrirCronometros }: Props) {
   const { presets } = cronometrosStore;
   const { sessao, avancarFase } = sessaoStore;
+  const { completarHabito } = habitsStore;
   const [toast, setToast] = useState<Toast | null>(null);
 
   useEffect(() => {
@@ -48,11 +51,18 @@ export default function CronometroNotificacao({ cronometrosStore, sessaoStore, o
 
       playBeep();
       const isLastFase = sessao.faseIndex === preset.fases.length - 1;
-      const mensagem = isLastFase
-        ? `${preset.nome} concluído — ${formatarDuracao(duracaoTotalMin(preset.fases))} de dedicação.`
-        : preset.fases[sessao.faseIndex].tipo === 'foco'
+      let mensagem: string;
+      if (isLastFase) {
+        mensagem = `${preset.nome} concluído — ${formatarDuracao(duracaoTotalMin(preset.fases))} de dedicação.`;
+        if (preset.habitoId) {
+          completarHabito(preset.habitoId);
+          mensagem += ' Hábito marcado como feito.';
+        }
+      } else {
+        mensagem = preset.fases[sessao.faseIndex].tipo === 'foco'
           ? `${preset.nome} — foco concluído, hora do descanso.`
           : `${preset.nome} — descanso concluído, hora do foco.`;
+      }
       setToast({ preset, tipo: isLastFase ? 'fim' : 'fase', mensagem });
       avancarFase(preset);
     };
@@ -60,7 +70,7 @@ export default function CronometroNotificacao({ cronometrosStore, sessaoStore, o
     tick();
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
-  }, [sessao, presets, avancarFase]);
+  }, [sessao, presets, avancarFase, completarHabito]);
 
   useEffect(() => {
     if (!toast) return;

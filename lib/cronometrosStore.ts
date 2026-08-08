@@ -76,12 +76,13 @@ export function useCronometrosStore() {
     }
   });
 
-  const createPreset = useCallback((data: { nome: string; fases: CronometroFase[]; areaId?: string }) => {
+  const createPreset = useCallback((data: { nome: string; fases: CronometroFase[]; areaId?: string; habitoId?: string }) => {
     const p: CronometroPreset = {
       id: uid(),
       nome: data.nome,
       fases: data.fases,
       areaId: data.areaId,
+      habitoId: data.habitoId,
       criadoEm: now(),
       atualizadoEm: now(),
     };

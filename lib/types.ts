@@ -136,6 +136,7 @@ export interface CronometroPreset {
   nome: string;
   fases: CronometroFase[];   // sequência de blocos — um bloco único ou várias rodadas de foco/descanso
   areaId?: string;
+  habitoId?: string;         // ao concluir a sessão inteira, marca esse hábito como feito hoje
   pronto?: boolean;          // true pros presets que já vêm com o app (não editáveis/excluíveis)
   criadoEm: string;
   atualizadoEm: string;

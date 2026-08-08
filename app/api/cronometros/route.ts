@@ -7,6 +7,7 @@ interface Row {
   nome: string;
   fases: CronometroFase[];
   area_id: string | null;
+  habito_id: string | null;
   pronto: boolean;
   criado_em: string;
   atualizado_em: string;
@@ -18,6 +19,7 @@ function rowToPreset(row: Row): CronometroPreset {
     nome: row.nome,
     fases: row.fases,
     areaId: row.area_id ?? undefined,
+    habitoId: row.habito_id ?? undefined,
     pronto: row.pronto,
     criadoEm: row.criado_em,
     atualizadoEm: row.atualizado_em,
@@ -37,6 +39,7 @@ export async function POST(request: NextRequest) {
     nome: body.nome,
     fases: body.fases,
     area_id: body.areaId ?? null,
+    habito_id: body.habitoId ?? null,
     pronto: body.pronto ?? false,
     criado_em: body.criadoEm,
     atualizado_em: body.atualizadoEm,

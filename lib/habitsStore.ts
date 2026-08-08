@@ -106,6 +106,21 @@ export function useHabitsStore() {
     });
   }, [habitos]);
 
+  // Idempotente (diferente de votar, que alterna) — pra efeitos automáticos como o cronômetro
+  // concluindo um hábito vinculado, onde rodar duas vezes não pode desmarcar o voto.
+  const completarHabito = useCallback((id: string, dateStr: string = toDateStr(new Date())) => {
+    const alvo = habitos.find(h => h.id === id);
+    if (!alvo || alvo.votos[dateStr]) return;
+    const votos = { ...alvo.votos, [dateStr]: true };
+
+    setHabitos(prev => prev.map(h => h.id === id ? { ...h, votos, atualizadoEm: now() } : h));
+    gravar(`/api/habitos/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: jsonComNulos({ votos }),
+    });
+  }, [habitos]);
+
   const aceitarEncolhimento = useCallback((id: string, novaMeta: string) => {
     setHabitos(prev => prev.map(h => h.id === id
       ? { ...h, metaAtual: novaMeta, encolhimentoDismissadoEm: undefined, atualizadoEm: now() }
@@ -133,6 +148,6 @@ export function useHabitsStore() {
   return {
     habitos, loaded, erro,
     createHabito, updateHabito, deleteHabito,
-    votar, aceitarEncolhimento, dispensarEncolhimento,
+    votar, completarHabito, aceitarEncolhimento, dispensarEncolhimento,
   };
 }

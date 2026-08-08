@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { CronometroFase, CronometroPreset } from '@/lib/types';
+import { CronometroFase, CronometroPreset, Habito } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { duracaoTotalMin } from '@/lib/cronometrosStore';
 import { IcClose } from '@/components/ui/icons';
@@ -38,11 +38,12 @@ function formatarDuracao(totalMin: number): string {
 
 interface CronometroFormModalProps {
   preset?: CronometroPreset;
+  habitos: Habito[];
   onClose: () => void;
-  onSave: (data: { nome: string; fases: CronometroFase[]; areaId?: string }) => void;
+  onSave: (data: { nome: string; fases: CronometroFase[]; areaId?: string; habitoId?: string }) => void;
 }
 
-export default function CronometroFormModal({ preset, onClose, onSave }: CronometroFormModalProps) {
+export default function CronometroFormModal({ preset, habitos, onClose, onSave }: CronometroFormModalProps) {
   const isEdit = !!preset;
   const presetEraPomodoro = preset ? preset.fases.length > 1 : false;
 
@@ -53,6 +54,7 @@ export default function CronometroFormModal({ preset, onClose, onSave }: Cronome
   const [focoMin, setFocoMin] = useState(presetEraPomodoro ? preset!.fases[0].minutos : 25);
   const [descansoMin, setDescansoMin] = useState(presetEraPomodoro ? (preset!.fases[1]?.minutos ?? 5) : 10);
   const [areaId, setAreaId] = useState(preset?.areaId ?? '');
+  const [habitoId, setHabitoId] = useState(preset?.habitoId ?? '');
 
   const canSave = nome.trim().length > 0 && (modo === 'bloco' ? blocoMin > 0 : rounds > 0 && focoMin > 0 && descansoMin >= 0);
   const fasesPreview = montarFases(modo, blocoMin, rounds, focoMin, descansoMin);
@@ -60,7 +62,7 @@ export default function CronometroFormModal({ preset, onClose, onSave }: Cronome
 
   const handleSave = () => {
     if (!canSave) return;
-    onSave({ nome: nome.trim(), fases: fasesPreview, areaId: areaId || undefined });
+    onSave({ nome: nome.trim(), fases: fasesPreview, areaId: areaId || undefined, habitoId: habitoId || undefined });
   };
 
   return (
@@ -258,6 +260,34 @@ export default function CronometroFormModal({ preset, onClose, onSave }: Cronome
                 );
               })}
             </div>
+          </div>
+
+          {/* Hábito vinculado */}
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 500, color: 'var(--char-soft)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+              Concluir hábito ao terminar — opcional
+            </label>
+            {habitos.length === 0 ? (
+              <p style={{ fontSize: 12, color: 'var(--char-mute)', fontStyle: 'italic', margin: 0 }}>
+                nenhum hábito criado ainda
+              </p>
+            ) : (
+              <select
+                value={habitoId}
+                onChange={e => setHabitoId(e.target.value)}
+                style={{ ...inputStyle, padding: '10px 12px' }}
+              >
+                <option value="">Nenhum</option>
+                {habitos.map(h => (
+                  <option key={h.id} value={h.id}>{h.acao}</option>
+                ))}
+              </select>
+            )}
+            {habitoId && (
+              <p style={{ fontSize: 11.5, color: 'var(--char-mute)', margin: '6px 0 0', lineHeight: 1.5 }}>
+                quando essa sessão terminar, &ldquo;{habitos.find(h => h.id === habitoId)?.acao}&rdquo; é marcado como feito hoje automaticamente.
+              </p>
+            )}
           </div>
         </div>
 

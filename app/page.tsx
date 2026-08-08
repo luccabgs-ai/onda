@@ -124,6 +124,7 @@ export default function Home() {
       <CronometroNotificacao
         cronometrosStore={cronometrosStore}
         sessaoStore={cronometroSessao}
+        habitsStore={habitsStore}
         onAbrirCronometros={() => setScreen('cronometros')}
       />
       <Sidebar
@@ -184,7 +185,7 @@ export default function Home() {
         )}
         {screen === 'habitos'     && <HabitosScreen store={habitsStore} />}
         {screen === 'cronometros' && (
-          <CronometrosScreen cronometrosStore={cronometrosStore} sessaoStore={cronometroSessao} />
+          <CronometrosScreen cronometrosStore={cronometrosStore} sessaoStore={cronometroSessao} habitsStore={habitsStore} />
         )}
         {screen === 'companheira' && <CompanheiraScreen />}
       </main>

@@ -1,17 +1,19 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { CronometroPreset } from '@/lib/types';
+import { CronometroPreset, Habito } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { useCronometrosStore, duracaoTotalMin } from '@/lib/cronometrosStore';
 import { useCronometroSessao } from '@/lib/cronometroSessaoStore';
+import { useHabitsStore } from '@/lib/habitsStore';
 import { CronometroClock } from './CronometroClock';
 import CronometroFormModal from './CronometroFormModal';
 import { Card } from '@/components/ui/Card';
-import { IcTimer, IcEdit, IcTrash, IcArrowR } from '@/components/ui/icons';
+import { IcTimer, IcEdit, IcTrash, IcArrowR, IcHabito } from '@/components/ui/icons';
 
 interface Props {
   cronometrosStore: ReturnType<typeof useCronometrosStore>;
   sessaoStore: ReturnType<typeof useCronometroSessao>;
+  habitsStore: ReturnType<typeof useHabitsStore>;
 }
 
 function formatarDuracao(totalMin: number): string {
@@ -29,9 +31,10 @@ function formatMMSS(ms: number): string {
 }
 
 function PresetCard({
-  preset, onStart, onEdit, onDelete,
+  preset, habitos, onStart, onEdit, onDelete,
 }: {
   preset: CronometroPreset;
+  habitos: Habito[];
   onStart: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -44,6 +47,7 @@ function PresetCard({
   const rounds = preset.fases.filter(f => f.tipo === 'foco').length;
   const focoFase = preset.fases.find(f => f.tipo === 'foco');
   const descansoFase = preset.fases.find(f => f.tipo === 'descanso');
+  const habitoVinculado = preset.habitoId ? habitos.find(h => h.id === preset.habitoId) : undefined;
 
   return (
     <Card
@@ -71,6 +75,12 @@ function PresetCard({
               : `${formatarDuracao(totalMin)} de foco`}
             {area && ` · ${area.name}`}
           </div>
+          {habitoVinculado && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5, fontSize: 11, color: color }}>
+              <IcHabito size={12} stroke={color} sw={1.6} />
+              conclui &ldquo;{habitoVinculado.acao}&rdquo;
+            </div>
+          )}
         </div>
 
         {(onEdit || onDelete) && hovered ? (
@@ -103,10 +113,11 @@ function PresetCard({
 }
 
 function CronometroRunner({
-  preset, sessaoStore,
+  preset, sessaoStore, habitos,
 }: {
   preset: CronometroPreset;
   sessaoStore: ReturnType<typeof useCronometroSessao>;
+  habitos: Habito[];
 }) {
   const { sessao, pausar, retomar, avancarFase, reiniciarFase, parar } = sessaoStore;
   const [remainingMs, setRemainingMs] = useState(0);
@@ -144,6 +155,12 @@ function CronometroRunner({
       <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--char-mute)', marginBottom: 6 }}>
         {preset.nome}
       </div>
+      {preset.habitoId && (
+        <div style={{ fontSize: 11.5, color: 'var(--char-mute)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <IcHabito size={12} stroke="var(--char-mute)" sw={1.6} />
+          conclui &ldquo;{habitos.find(h => h.id === preset.habitoId)?.acao ?? '…'}&rdquo; ao terminar
+        </div>
+      )}
 
       <CronometroClock
         size={320}
@@ -212,7 +229,7 @@ function CronometroRunner({
   );
 }
 
-export default function CronometrosScreen({ cronometrosStore, sessaoStore }: Props) {
+export default function CronometrosScreen({ cronometrosStore, sessaoStore, habitsStore }: Props) {
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<CronometroPreset | null>(null);
   const [justCompleted, setJustCompleted] = useState<CronometroPreset | null>(null);
@@ -240,12 +257,12 @@ export default function CronometrosScreen({ cronometrosStore, sessaoStore }: Pro
   const prontos = presets.filter(p => p.pronto);
   const customizados = presets.filter(p => !p.pronto);
 
-  const handleSaveCreate = (data: { nome: string; fases: CronometroPreset['fases']; areaId?: string }) => {
+  const handleSaveCreate = (data: { nome: string; fases: CronometroPreset['fases']; areaId?: string; habitoId?: string }) => {
     createPreset(data);
     setShowCreate(false);
   };
 
-  const handleSaveEdit = (data: { nome: string; fases: CronometroPreset['fases']; areaId?: string }) => {
+  const handleSaveEdit = (data: { nome: string; fases: CronometroPreset['fases']; areaId?: string; habitoId?: string }) => {
     if (editing) updatePreset(editing.id, data);
     setEditing(null);
   };
@@ -260,6 +277,9 @@ export default function CronometrosScreen({ cronometrosStore, sessaoStore }: Pro
         </h2>
         <p style={{ fontSize: 14, color: 'var(--char-soft)', marginBottom: 24 }}>
           {justCompleted.nome} — {formatarDuracao(duracaoTotalMin(justCompleted.fases))} de dedicação.
+          {justCompleted.habitoId && (
+            <> &ldquo;{habitsStore.habitos.find(h => h.id === justCompleted.habitoId)?.acao ?? 'hábito'}&rdquo; foi marcado como feito.</>
+          )}
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
           <button
@@ -282,7 +302,7 @@ export default function CronometrosScreen({ cronometrosStore, sessaoStore }: Pro
   if (sessao && presetAtivo) {
     return (
       <div style={{ padding: '40px 56px 80px', maxWidth: 880, margin: '0 auto' }}>
-        <CronometroRunner preset={presetAtivo} sessaoStore={sessaoStore} />
+        <CronometroRunner preset={presetAtivo} sessaoStore={sessaoStore} habitos={habitsStore.habitos} />
       </div>
     );
   }
@@ -333,7 +353,7 @@ export default function CronometrosScreen({ cronometrosStore, sessaoStore }: Pro
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {prontos.map(p => (
-            <PresetCard key={p.id} preset={p} onStart={() => iniciar(p)} />
+            <PresetCard key={p.id} preset={p} habitos={habitsStore.habitos} onStart={() => iniciar(p)} />
           ))}
         </div>
       </div>
@@ -354,6 +374,7 @@ export default function CronometrosScreen({ cronometrosStore, sessaoStore }: Pro
               <PresetCard
                 key={p.id}
                 preset={p}
+                habitos={habitsStore.habitos}
                 onStart={() => iniciar(p)}
                 onEdit={() => setEditing(p)}
                 onDelete={() => deletePreset(p.id)}
@@ -365,10 +386,10 @@ export default function CronometrosScreen({ cronometrosStore, sessaoStore }: Pro
 
       {/* Modais */}
       {showCreate && (
-        <CronometroFormModal onClose={() => setShowCreate(false)} onSave={handleSaveCreate} />
+        <CronometroFormModal habitos={habitsStore.habitos} onClose={() => setShowCreate(false)} onSave={handleSaveCreate} />
       )}
       {editing && (
-        <CronometroFormModal preset={editing} onClose={() => setEditing(null)} onSave={handleSaveEdit} />
+        <CronometroFormModal preset={editing} habitos={habitsStore.habitos} onClose={() => setEditing(null)} onSave={handleSaveEdit} />
       )}
     </div>
   );
