@@ -3,7 +3,7 @@ import { Habito, Area } from './types';
 export const toDateStr = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-function addDays(dateStr: string, delta: number): string {
+export function addDays(dateStr: string, delta: number): string {
   const d = new Date(dateStr + 'T12:00:00');
   d.setDate(d.getDate() + delta);
   return toDateStr(d);
@@ -58,6 +58,12 @@ export function faltasConsecutivas(habito: Habito, hoje: string = toDateStr(new 
 
 export function votouHoje(habito: Habito, hoje: string = toDateStr(new Date())): boolean {
   return !!habito.votos[hoje];
+}
+
+/** Hábitos agendados ontem que ainda não foram votados — pra revisão ao abrir o app. */
+export function habitosPendentesDeOntem(habitos: Habito[], hoje: string = toDateStr(new Date())): Habito[] {
+  const ontem = addDays(hoje, -1);
+  return habitos.filter(h => existiaEm(h, ontem) && estaAgendadoEm(h, ontem) && !h.votos[ontem]);
 }
 
 /** A partir de 3 faltas seguidas, e se a última recusa não foi hoje/ontem, oferece encolher a meta. */

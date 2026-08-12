@@ -11,6 +11,7 @@ import CalendarioScreen from '@/components/calendario/CalendarioScreen';
 import HabitosScreen from '@/components/habitos/HabitosScreen';
 import CronometrosScreen from '@/components/cronometros/CronometrosScreen';
 import CronometroNotificacao from '@/components/cronometros/CronometroNotificacao';
+import RevisaoHabitosModal from '@/components/habitos/RevisaoHabitosModal';
 import ObjetivosScreen from '@/components/objetivos/ObjetivosScreen';
 import { useProjectsStore } from '@/lib/projectsStore';
 import { useCalendarStore } from '@/lib/calendarStore';
@@ -127,6 +128,7 @@ export default function Home() {
         habitsStore={habitsStore}
         onAbrirCronometros={() => setScreen('cronometros')}
       />
+      <RevisaoHabitosModal habitsStore={habitsStore} />
       <Sidebar
         active={screen}
         onChange={setScreen}
