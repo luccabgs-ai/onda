@@ -39,5 +39,5 @@ export default async function proxy(request: NextRequest) {
 
 export const config = {
   // Tudo passa pela checagem, exceto a tela de senha, o endpoint de login e os assets do Next.
-  matcher: ['/((?!entrar|api/auth/login|_next/static|_next/image|favicon\\.ico).*)'],
+  matcher: ['/((?!entrar|api/auth/login|_next/static|_next/image|favicon\\.ico|icon\\.svg).*)'],
 };
