@@ -120,21 +120,23 @@ export default function RevisaoHabitosModal({ habitsStore }: Props) {
             {pendentes.map(h => {
               const marcado = selecionados.has(h.id);
               return (
-                <button
+                <div
                   key={h.id}
                   onClick={() => toggle(h.id)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 12px', borderRadius: 6, textAlign: 'left',
+                    padding: '10px 12px', borderRadius: 6, textAlign: 'left', cursor: 'pointer',
                     border: `1px solid ${marcado ? 'rgba(27,54,93,0.25)' : 'rgba(27,54,93,0.10)'}`,
                     background: marcado ? 'rgba(27,54,93,0.05)' : 'rgba(255,255,255,0.5)',
                     transition: 'all 0.12s',
                   }}
                 >
-                  <Checkbox checked={marcado} onChange={() => toggle(h.id)} />
+                  {/* onChange fica de fora: o clique já borbulha pro onClick da linha — chamar
+                      toggle nos dois pontos alternava duas vezes e cancelava a seleção. */}
+                  <Checkbox checked={marcado} />
                   <span style={{ flex: 1, fontSize: 13.5, color: 'var(--char)' }}>{h.acao}</span>
                   <AreaBadge areaId={h.areaId} small />
-                </button>
+                </div>
               );
             })}
           </div>
