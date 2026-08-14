@@ -58,25 +58,29 @@ interface ProjectTaskRowProps {
   onOpen: () => void;
 }
 
-const ProjectTaskRow = ({ task, project, statusLabel, statusColor, onToggle, onOpen }: ProjectTaskRowProps) => (
+const ProjectTaskRow = ({ task, project, statusLabel, statusColor, onToggle, onOpen }: ProjectTaskRowProps) => {
+  const feita = task.status === 'concluido';
+  return (
   <div style={{
     display: 'flex',
     alignItems: 'flex-start',
     gap: 10,
     padding: '10px 12px',
     borderRadius: 6,
-    border: '1px solid rgba(27,54,93,0.1)',
+    border: `1px solid ${feita ? 'rgba(27,54,93,0.06)' : 'rgba(27,54,93,0.1)'}`,
     borderLeft: `3px solid ${project?.color ?? 'var(--ink)'}`,
-    background: 'rgba(255,255,255,0.6)',
+    background: feita ? 'rgba(27,54,93,0.04)' : 'rgba(255,255,255,0.6)',
+    opacity: feita ? 0.75 : 1,
+    transition: 'all 0.2s ease',
   }}>
-    <Checkbox checked={task.status === 'concluido'} onChange={onToggle} />
+    <Checkbox checked={feita} onChange={onToggle} />
     <button onClick={onOpen} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
       <p style={{
         fontSize: 13,
-        color: 'var(--char)',
+        color: feita ? 'var(--char-mute)' : 'var(--char)',
         margin: '0 0 5px',
         lineHeight: 1.4,
-        textDecoration: task.status === 'concluido' ? 'line-through' : 'none',
+        textDecoration: feita ? 'line-through' : 'none',
       }}>
         {task.title}
       </p>
@@ -101,7 +105,8 @@ const ProjectTaskRow = ({ task, project, statusLabel, statusColor, onToggle, onO
       </div>
     </button>
   </div>
-);
+  );
+};
 
 const SectionTitle = ({
   kicker,
@@ -277,16 +282,22 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
       return { objetivo: o, concluidas, total, progresso };
     });
 
-  // Tarefas com prazo hoje ou vencido, ainda não concluídas — "o que precisa da sua atenção agora".
+  // Uma tarefa concluída hoje mesmo continua na lista (marcada, riscada) em vez de sumir na
+  // hora — só sai de fato amanhã. Evita o "pulo" de a lista encolher a cada toque.
+  // updatedAt vem em UTC — comparar com slice(0,10) erra perto da meia-noite em fusos como o
+  // nosso (UTC-3): convertendo pra Date primeiro, toDateStr já extrai a data no fuso local.
+  const concluidaHoje = (t: Task) => t.status === 'concluido' && toDateStr(new Date(t.updatedAt)) === hojeStr;
+
+  // Tarefas com prazo hoje ou vencido — "o que precisa da sua atenção agora".
   const atividadesProjetoHoje = [...tasks]
-    .filter(t => t.status !== 'concluido' && !!t.dueDate && t.dueDate <= hojeStr)
+    .filter(t => !!t.dueDate && t.dueDate <= hojeStr && (t.status !== 'concluido' || concluidaHoje(t)))
     .sort((a, b) => a.dueDate!.localeCompare(b.dueDate!));
 
   // Sugestões: o resto das tarefas em aberto, priorizando as mais urgentes e as mais antigas
   // (paradas há mais tempo) — um empurrão pros projetos que não têm prazo apertando hoje.
   const idsAtividadesHoje = new Set(atividadesProjetoHoje.map(t => t.id));
   const sugestoesProjeto = [...tasks]
-    .filter(t => t.status !== 'concluido' && !idsAtividadesHoje.has(t.id))
+    .filter(t => !idsAtividadesHoje.has(t.id) && (t.status !== 'concluido' || concluidaHoje(t)))
     .sort((a, b) => {
       const dif = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
       return dif !== 0 ? dif : a.createdAt.localeCompare(b.createdAt);
@@ -803,9 +814,9 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
                         key={t.id}
                         task={t}
                         project={projectOf(t.projectId)}
-                        statusLabel={atrasada ? 'atrasada' : 'hoje'}
-                        statusColor={atrasada ? 'var(--hanko)' : undefined}
-                        onToggle={() => moveTask(t.id, 'concluido')}
+                        statusLabel={t.status === 'concluido' ? 'concluída' : (atrasada ? 'atrasada' : 'hoje')}
+                        statusColor={t.status === 'concluido' ? 'var(--moss)' : (atrasada ? 'var(--hanko)' : undefined)}
+                        onToggle={() => moveTask(t.id, t.status === 'concluido' ? 'a_fazer' : 'concluido')}
                         onOpen={() => { const p = projectOf(t.projectId); if (p) onAbrirProjeto(p); }}
                       />
                     );
@@ -824,8 +835,9 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
                       key={t.id}
                       task={t}
                       project={projectOf(t.projectId)}
-                      statusLabel={t.dueDate ? `prazo ${formatDueLabel(t.dueDate)}` : undefined}
-                      onToggle={() => moveTask(t.id, 'concluido')}
+                      statusLabel={t.status === 'concluido' ? 'concluída' : (t.dueDate ? `prazo ${formatDueLabel(t.dueDate)}` : undefined)}
+                      statusColor={t.status === 'concluido' ? 'var(--moss)' : undefined}
+                      onToggle={() => moveTask(t.id, t.status === 'concluido' ? 'a_fazer' : 'concluido')}
                       onOpen={() => { const p = projectOf(t.projectId); if (p) onAbrirProjeto(p); }}
                     />
                   ))}
