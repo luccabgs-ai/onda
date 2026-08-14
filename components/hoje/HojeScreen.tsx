@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { AREAS } from '@/lib/data';
-import { PrioridadeRitual } from '@/lib/types';
+import { PrioridadeRitual, Task, Project } from '@/lib/types';
 import { useHabitsStore } from '@/lib/habitsStore';
 import { useProjectsStore } from '@/lib/projectsStore';
 import { useObjetivosStore } from '@/lib/objetivosStore';
@@ -33,7 +33,75 @@ interface HojeScreenProps {
   rituaisStore: ReturnType<typeof useRituaisStore>;
   onIrParaRitual: () => void;
   onIrParaObjetivos: () => void;
+  onAbrirProjeto: (project: Project) => void;
 }
+
+const PRIORITY_COLOR: Record<string, string> = {
+  baixa: 'var(--moss)', media: '#B8860B', alta: 'var(--hanko)',
+};
+const PRIORITY_LABEL: Record<string, string> = {
+  baixa: 'Baixa', media: 'Média', alta: 'Alta',
+};
+const PRIORITY_ORDER: Record<string, number> = { alta: 0, media: 1, baixa: 2 };
+
+function formatDueLabel(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}
+
+interface ProjectTaskRowProps {
+  task: Task;
+  project?: Project;
+  statusLabel?: string;
+  statusColor?: string;
+  onToggle: () => void;
+  onOpen: () => void;
+}
+
+const ProjectTaskRow = ({ task, project, statusLabel, statusColor, onToggle, onOpen }: ProjectTaskRowProps) => (
+  <div style={{
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: '10px 12px',
+    borderRadius: 6,
+    border: '1px solid rgba(27,54,93,0.1)',
+    borderLeft: `3px solid ${project?.color ?? 'var(--ink)'}`,
+    background: 'rgba(255,255,255,0.6)',
+  }}>
+    <Checkbox checked={task.status === 'concluido'} onChange={onToggle} />
+    <button onClick={onOpen} style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
+      <p style={{
+        fontSize: 13,
+        color: 'var(--char)',
+        margin: '0 0 5px',
+        lineHeight: 1.4,
+        textDecoration: task.status === 'concluido' ? 'line-through' : 'none',
+      }}>
+        {task.title}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        {project && (
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: 'var(--char-mute)' }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: project.color, flexShrink: 0 }} />
+            {project.title}
+          </span>
+        )}
+        <span style={{
+          fontSize: 10, fontWeight: 600, padding: '1px 6px', borderRadius: 8,
+          background: PRIORITY_COLOR[task.priority] + '18', color: PRIORITY_COLOR[task.priority],
+        }}>
+          {PRIORITY_LABEL[task.priority]}
+        </span>
+        {statusLabel && (
+          <span style={{ fontSize: 10, color: statusColor ?? 'var(--char-mute)', fontWeight: statusColor ? 600 : 400 }}>
+            {statusLabel}
+          </span>
+        )}
+      </div>
+    </button>
+  </div>
+);
 
 const SectionTitle = ({
   kicker,
@@ -176,7 +244,7 @@ const StreakSummaryInline = ({ habitos }: StreakCardProps) => {
   );
 };
 
-export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsStore, objetivosStore, calendarStore, rituaisStore, onIrParaRitual, onIrParaObjetivos }: HojeScreenProps) {
+export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsStore, objetivosStore, calendarStore, rituaisStore, onIrParaRitual, onIrParaObjetivos, onAbrirProjeto }: HojeScreenProps) {
   const [hoveredHabitoId, setHoveredHabitoId] = useState<string | null>(null);
   const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
   const [editingSlotDraft, setEditingSlotDraft] = useState<PrioridadeRitual | null>(null);
@@ -208,6 +276,24 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
         : 0;
       return { objetivo: o, concluidas, total, progresso };
     });
+
+  // Tarefas com prazo hoje ou vencido, ainda não concluídas — "o que precisa da sua atenção agora".
+  const atividadesProjetoHoje = [...tasks]
+    .filter(t => t.status !== 'concluido' && !!t.dueDate && t.dueDate <= hojeStr)
+    .sort((a, b) => a.dueDate!.localeCompare(b.dueDate!));
+
+  // Sugestões: o resto das tarefas em aberto, priorizando as mais urgentes e as mais antigas
+  // (paradas há mais tempo) — um empurrão pros projetos que não têm prazo apertando hoje.
+  const idsAtividadesHoje = new Set(atividadesProjetoHoje.map(t => t.id));
+  const sugestoesProjeto = [...tasks]
+    .filter(t => t.status !== 'concluido' && !idsAtividadesHoje.has(t.id))
+    .sort((a, b) => {
+      const dif = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+      return dif !== 0 ? dif : a.createdAt.localeCompare(b.createdAt);
+    })
+    .slice(0, 3);
+
+  const projectOf = (projectId: string) => projects.find(p => p.id === projectId);
 
   const prioridadeItems = computePrioridadesDoDia({
     tasks, projects, habitos, vitorias: vitoriasHoje, events, hoje: hojeStr,
@@ -685,6 +771,69 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── PROJETOS — atividades com prazo hoje + sugestões pra avançar outros projetos ── */}
+      <div style={{ marginBottom: 36 }}>
+        <SectionTitle kicker="Trabalho" title="Projetos" jp="計画" />
+        {projects.length === 0 ? (
+          <p style={{ fontSize: 13, color: 'var(--char-mute)', fontStyle: 'italic', margin: 0 }}>
+            nenhum projeto criado ainda — vá na aba Projetos pra começar
+          </p>
+        ) : atividadesProjetoHoje.length === 0 && sugestoesProjeto.length === 0 ? (
+          <p style={{ fontSize: 13, color: 'var(--char-mute)', fontStyle: 'italic', margin: 0 }}>
+            nada com prazo hoje e nenhuma tarefa em aberto — dia livre nos projetos
+          </p>
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: atividadesProjetoHoje.length > 0 && sugestoesProjeto.length > 0 ? '1fr 1fr' : '1fr',
+            gap: 24,
+          }}>
+            {atividadesProjetoHoje.length > 0 && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--char-mute)', marginBottom: 10 }}>
+                  Hoje
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {atividadesProjetoHoje.map(t => {
+                    const atrasada = t.dueDate! < hojeStr;
+                    return (
+                      <ProjectTaskRow
+                        key={t.id}
+                        task={t}
+                        project={projectOf(t.projectId)}
+                        statusLabel={atrasada ? 'atrasada' : 'hoje'}
+                        statusColor={atrasada ? 'var(--hanko)' : undefined}
+                        onToggle={() => moveTask(t.id, 'concluido')}
+                        onOpen={() => { const p = projectOf(t.projectId); if (p) onAbrirProjeto(p); }}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {sugestoesProjeto.length > 0 && (
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--char-mute)', marginBottom: 10 }}>
+                  Sugestões pra hoje
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {sugestoesProjeto.map(t => (
+                    <ProjectTaskRow
+                      key={t.id}
+                      task={t}
+                      project={projectOf(t.projectId)}
+                      statusLabel={t.dueDate ? `prazo ${formatDueLabel(t.dueDate)}` : undefined}
+                      onToggle={() => moveTask(t.id, 'concluido')}
+                      onOpen={() => { const p = projectOf(t.projectId); if (p) onAbrirProjeto(p); }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── OBJETIVOS — progresso dos objetivos ativos ── */}

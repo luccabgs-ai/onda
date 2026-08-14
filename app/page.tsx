@@ -150,6 +150,7 @@ export default function Home() {
             rituaisStore={rituaisStore}
             onIrParaRitual={() => setScreen('ritual')}
             onIrParaObjetivos={() => setScreen('objetivos')}
+            onAbrirProjeto={(project) => { setActiveProject(project); setScreen('projetos'); }}
             hour={hour}
             habitsStore={habitsStore}
             projectsStore={store}
