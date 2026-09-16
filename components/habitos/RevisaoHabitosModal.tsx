@@ -31,7 +31,7 @@ export default function RevisaoHabitosModal({ habitsStore }: Props) {
 
   const hoje = toDateStr(new Date());
   const ontem = addDays(hoje, -1);
-  const pendentes = habitosPendentesDeOntem(habitos, hoje);
+  const { agendados, foraDaAgenda } = habitosPendentesDeOntem(habitos, hoje);
 
   // Lido uma única vez, no primeiro render — dispensar de novo (setDispensadoNaSessao) já
   // cobre o resto da sessão, então não precisa reler o localStorage depois disso.
@@ -39,7 +39,8 @@ export default function RevisaoHabitosModal({ habitsStore }: Props) {
     () => typeof window !== 'undefined' && localStorage.getItem(STORAGE_KEY) === ontem
   );
 
-  const visivel = habitsStore.loaded && !dispensadoNaSessao && !jaRevisadoAntes && pendentes.length > 0;
+  const visivel = habitsStore.loaded && !dispensadoNaSessao && !jaRevisadoAntes
+    && agendados.length + foraDaAgenda.length > 0;
 
   const dispensar = () => {
     localStorage.setItem(STORAGE_KEY, ontem);
@@ -116,30 +117,40 @@ export default function RevisaoHabitosModal({ habitsStore }: Props) {
           <p style={{ fontSize: 12.5, color: 'var(--char-soft)', margin: '0 0 14px', lineHeight: 1.55 }}>
             Esses ficaram sem voto ontem. Marca os que você de fato fez e esqueceu de registrar.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {pendentes.map(h => {
-              const marcado = selecionados.has(h.id);
-              return (
-                <div
-                  key={h.id}
-                  onClick={() => toggle(h.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 12px', borderRadius: 6, textAlign: 'left', cursor: 'pointer',
-                    border: `1px solid ${marcado ? 'rgba(27,54,93,0.25)' : 'rgba(27,54,93,0.10)'}`,
-                    background: marcado ? 'rgba(27,54,93,0.05)' : 'rgba(255,255,255,0.5)',
-                    transition: 'all 0.12s',
-                  }}
-                >
-                  {/* onChange fica de fora: o clique já borbulha pro onClick da linha — chamar
-                      toggle nos dois pontos alternava duas vezes e cancelava a seleção. */}
-                  <Checkbox checked={marcado} />
-                  <span style={{ flex: 1, fontSize: 13.5, color: 'var(--char)' }}>{h.acao}</span>
-                  <AreaBadge areaId={h.areaId} small />
-                </div>
-              );
-            })}
-          </div>
+          {[
+            { titulo: 'Agendados pra ontem', lista: agendados },
+            { titulo: 'Fora da agenda', lista: foraDaAgenda },
+          ].filter(g => g.lista.length > 0).map((grupo, gi) => (
+            <div key={grupo.titulo} style={{ marginTop: gi > 0 ? 18 : 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--char-mute)', marginBottom: 8 }}>
+                {grupo.titulo}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {grupo.lista.map(h => {
+                  const marcado = selecionados.has(h.id);
+                  return (
+                    <div
+                      key={h.id}
+                      onClick={() => toggle(h.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '10px 12px', borderRadius: 6, textAlign: 'left', cursor: 'pointer',
+                        border: `1px solid ${marcado ? 'rgba(27,54,93,0.25)' : 'rgba(27,54,93,0.10)'}`,
+                        background: marcado ? 'rgba(27,54,93,0.05)' : 'rgba(255,255,255,0.5)',
+                        transition: 'all 0.12s',
+                      }}
+                    >
+                      {/* onChange fica de fora: o clique já borbulha pro onClick da linha — chamar
+                          toggle nos dois pontos alternava duas vezes e cancelava a seleção. */}
+                      <Checkbox checked={marcado} />
+                      <span style={{ flex: 1, fontSize: 13.5, color: 'var(--char)' }}>{h.acao}</span>
+                      <AreaBadge areaId={h.areaId} small />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Footer */}

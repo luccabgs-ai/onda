@@ -60,10 +60,20 @@ export function votouHoje(habito: Habito, hoje: string = toDateStr(new Date())):
   return !!habito.votos[hoje];
 }
 
-/** Hábitos agendados ontem que ainda não foram votados — pra revisão ao abrir o app. */
-export function habitosPendentesDeOntem(habitos: Habito[], hoje: string = toDateStr(new Date())): Habito[] {
+/**
+ * Hábitos sem voto ontem, pra revisão ao abrir o app: os que estavam agendados e os que
+ * não estavam (mas podem ter sido feitos assim mesmo — um voto fora do dia conta como bônus).
+ */
+export function habitosPendentesDeOntem(
+  habitos: Habito[],
+  hoje: string = toDateStr(new Date())
+): { agendados: Habito[]; foraDaAgenda: Habito[] } {
   const ontem = addDays(hoje, -1);
-  return habitos.filter(h => existiaEm(h, ontem) && estaAgendadoEm(h, ontem) && !h.votos[ontem]);
+  const semVoto = habitos.filter(h => existiaEm(h, ontem) && !h.votos[ontem]);
+  return {
+    agendados: semVoto.filter(h => estaAgendadoEm(h, ontem)),
+    foraDaAgenda: semVoto.filter(h => !estaAgendadoEm(h, ontem)),
+  };
 }
 
 /** A partir de 3 faltas seguidas, e se a última recusa não foi hoje/ontem, oferece encolher a meta. */
