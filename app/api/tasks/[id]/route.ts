@@ -11,6 +11,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if ('dueDate' in body) patch.due_date = body.dueDate ?? null;
   if ('priority' in body) patch.priority = body.priority;
   if ('checklist' in body) patch.checklist = body.checklist;
+  if ('valorAlvo' in body) patch.valor_alvo = body.valorAlvo ?? null;
+  if ('valorAtual' in body) patch.valor_atual = body.valorAtual ?? 0;
+  if ('unidade' in body) patch.unidade = body.unidade ?? null;
   if ('status' in body) patch.status = body.status;
   if ('order' in body) patch.sort_order = body.order;
   patch.updated_at = new Date().toISOString();

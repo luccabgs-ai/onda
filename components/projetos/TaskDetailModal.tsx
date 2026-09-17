@@ -1,8 +1,9 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Task, Project, TaskStatus, ChecklistItem } from '@/lib/types';
 import { IcClose } from '@/components/ui/icons';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { LinhaProgresso, BotoesContador, formatarValor, lerValor } from './ProgressoTarefa';
 
 const PRIORITY_LABEL: Record<string, string> = { baixa: 'Baixa', media: 'Média', alta: 'Alta' };
 const PRIORITY_COLOR: Record<string, string> = { baixa: 'var(--moss)', media: '#B8860B', alta: 'var(--hanko)' };
@@ -34,6 +35,7 @@ interface TaskDetailModalProps {
   onMove: (status: TaskStatus) => void;
   onToggleChecklist: (itemId: string) => void;
   onReorderChecklist: (novaOrdem: ChecklistItem[]) => void;
+  onDefinirContador: (valor: number) => void;
 }
 
 export default function TaskDetailModal({
@@ -45,8 +47,27 @@ export default function TaskDetailModal({
   onMove,
   onToggleChecklist,
   onReorderChecklist,
+  onDefinirContador,
 }: TaskDetailModalProps) {
   const pastDue = isPastDue(task.dueDate);
+  const alvo = task.valorAlvo;
+  const atual = Math.min(task.valorAtual ?? 0, alvo ?? 0);
+  const metaBatida = alvo !== undefined && atual >= alvo;
+  // Texto sendo digitado no número grande; null = mostrando o valor salvo.
+  const [rascunhoContador, setRascunhoContador] = useState<string | null>(null);
+  const cancelouRascunho = useRef(false);
+
+  const confirmarRascunho = () => {
+    if (rascunhoContador === null) return;
+    if (cancelouRascunho.current) {
+      cancelouRascunho.current = false;
+      setRascunhoContador(null);
+      return;
+    }
+    const valor = lerValor(rascunhoContador);
+    if (Number.isFinite(valor)) onDefinirContador(valor);
+    setRascunhoContador(null);
+  };
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [dragOverPos, setDragOverPos] = useState<'before' | 'after' | null>(null);
@@ -165,6 +186,63 @@ export default function TaskDetailModal({
             <p style={{ fontSize: 14, color: 'var(--char-soft)', margin: 0, lineHeight: 1.6 }}>
               {task.description}
             </p>
+          )}
+
+          {/* Progresso — só em tarefas mensuráveis */}
+          {alvo !== undefined && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--char-mute)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+                Progresso
+              </div>
+              <div style={{
+                padding: 16, borderRadius: 6,
+                border: '1px solid rgba(27,54,93,0.10)', background: 'rgba(255,255,255,0.5)',
+                display: 'flex', flexDirection: 'column', gap: 12,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                    <input
+                      id="contador-tarefa"
+                      aria-label="Quanto já foi feito"
+                      title="clique pra digitar o valor"
+                      inputMode="decimal"
+                      value={rascunhoContador ?? formatarValor(atual)}
+                      onFocus={e => { setRascunhoContador(formatarValor(atual)); e.currentTarget.select(); }}
+                      onChange={e => setRascunhoContador(e.target.value)}
+                      onBlur={confirmarRascunho}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') e.currentTarget.blur();
+                        if (e.key === 'Escape') { cancelouRascunho.current = true; e.currentTarget.blur(); }
+                      }}
+                      className="serif"
+                      style={{
+                        width: `${Math.max(1, (rascunhoContador ?? formatarValor(atual)).length) * 0.62 + 0.3}em`,
+                        fontSize: 42, lineHeight: 1, fontWeight: 600, color: 'var(--ink)',
+                        background: 'transparent', border: 'none', padding: 0,
+                        borderBottom: '1px dashed rgba(27,54,93,0.25)',
+                        textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+                      }}
+                    />
+                    <span className="serif" style={{ fontSize: 22, color: 'var(--char-mute)' }}>
+                      / {formatarValor(alvo)}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 12.5, color: 'var(--char-soft)', paddingBottom: 5 }}>
+                    {task.unidade ? `${task.unidade} · ` : ''}
+                    {metaBatida ? 'meta batida' : `faltam ${formatarValor(alvo - atual)}`}
+                  </span>
+                  <div style={{ marginLeft: 'auto' }}>
+                    <BotoesContador atual={atual} alvo={alvo} onDefinir={onDefinirContador} grande />
+                  </div>
+                </div>
+                <LinhaProgresso atual={atual} alvo={alvo} cor={project.color} altura={8} />
+                {metaBatida && (
+                  <span style={{ fontSize: 12.5, color: 'var(--moss)', fontWeight: 500 }}>
+                    ✓ Meta batida{task.status === 'concluido' ? ' — etapa concluída.' : '.'}
+                  </span>
+                )}
+              </div>
+            </div>
           )}
 
           {/* Status */}

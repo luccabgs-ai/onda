@@ -133,6 +133,26 @@ export function useProjectsStore() {
     patchTask(taskId, { checklist });
   }, [state.tasks]);
 
+  /**
+   * Ajusta o contador de uma tarefa mensurável. Bater a meta joga a tarefa pro fim de
+   * Concluído; voltar abaixo da meta estando em Concluído devolve pra Em Andamento.
+   */
+  const definirContador = useCallback((taskId: string, valor: number) => {
+    const tarefa = state.tasks.find(t => t.id === taskId);
+    if (!tarefa || tarefa.valorAlvo === undefined || !Number.isFinite(valor)) return;
+    const valorAtual = Math.min(tarefa.valorAlvo, Math.max(0, valor));
+    const data: Partial<Task> = { valorAtual };
+    if (valorAtual >= tarefa.valorAlvo && tarefa.status !== 'concluido') {
+      data.status = 'concluido';
+      data.order = Date.now();
+    } else if (valorAtual < tarefa.valorAlvo && tarefa.status === 'concluido') {
+      data.status = 'em_andamento';
+      data.order = Date.now();
+    }
+    setState(s => ({ ...s, tasks: s.tasks.map(t => t.id === taskId ? { ...t, ...data, updatedAt: now() } : t) }));
+    patchTask(taskId, data);
+  }, [state.tasks]);
+
   const getTasksByProject = useCallback((projectId: string) => {
     const tasks = state.tasks.filter(t => t.projectId === projectId).sort((a, b) => a.order - b.order);
     return {
@@ -149,7 +169,7 @@ export function useProjectsStore() {
     erro,
     createProject, updateProject, deleteProject,
     createTask, updateTask, deleteTask,
-    moveTask, reorderTask, toggleChecklistItem, addChecklistItem, removeChecklistItem,
+    moveTask, reorderTask, toggleChecklistItem, addChecklistItem, removeChecklistItem, definirContador,
     getTasksByProject,
   };
 }

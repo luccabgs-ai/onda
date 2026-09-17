@@ -89,6 +89,9 @@ export interface Task {
   dueDate?: string;
   priority: Priority;
   checklist: ChecklistItem[];
+  valorAlvo?: number;   // presente = tarefa mensurável ("Estudar 5 artigos"); ausente = tarefa comum
+  valorAtual?: number;  // quanto já foi feito — só tem sentido com valorAlvo; ausente conta como 0
+  unidade?: string;     // "artigos", "km"...
   status: TaskStatus;
   order: number;        // posição dentro da coluna — menor vem primeiro
   createdAt: string;

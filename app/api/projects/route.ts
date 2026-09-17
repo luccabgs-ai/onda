@@ -21,6 +21,9 @@ interface TaskRow {
   due_date: string | null;
   priority: Priority;
   checklist: ChecklistItem[];
+  valor_alvo: number | null;
+  valor_atual: number;
+  unidade: string | null;
   status: TaskStatus;
   sort_order: number;
   created_at: string;
@@ -49,6 +52,9 @@ function rowToTask(row: TaskRow): Task {
     dueDate: row.due_date ?? undefined,
     priority: row.priority,
     checklist: row.checklist,
+    valorAlvo: row.valor_alvo ?? undefined,
+    valorAtual: row.valor_atual ?? undefined,
+    unidade: row.unidade ?? undefined,
     status: row.status,
     order: row.sort_order,
     createdAt: row.created_at,

@@ -7,6 +7,7 @@ import { AreaBadge } from '@/components/ui/AreaBadge';
 import ProjectFormModal from './ProjectFormModal';
 import TaskFormModal from './TaskFormModal';
 import TaskDetailModal from './TaskDetailModal';
+import { LinhaProgresso, BotoesContador, formatarValor } from './ProgressoTarefa';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,7 @@ function TaskCard({
   projectColor,
   onOpen,
   onMove,
+  onDefinirContador,
   onDragStart,
   onDragEnd,
   onDragOverCard,
@@ -77,6 +79,7 @@ function TaskCard({
   projectColor: string;
   onOpen: () => void;
   onMove: (s: TaskStatus) => void;
+  onDefinirContador: (valor: number) => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   onDragOverCard: (e: React.DragEvent) => void;
@@ -88,6 +91,9 @@ function TaskCard({
   const doneCount = task.checklist.filter(c => c.done).length;
   const prev = getPrev(task.status);
   const next = getNext(task.status);
+  const alvo = task.valorAlvo;
+  const atual = Math.min(task.valorAtual ?? 0, alvo ?? 0);
+  const metaBatida = alvo !== undefined && atual >= alvo;
 
   return (
     <Card
@@ -147,8 +153,31 @@ function TaskCard({
           ))}
         </div>
       )}
-      {(prev || next) && (
-        <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 4, marginTop: 8, justifyContent: 'flex-end' }}>
+      {alvo !== undefined && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 9 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
+              {formatarValor(atual)}/{formatarValor(alvo)}
+            </span>
+            {task.unidade && <span style={{ fontSize: 11, color: 'var(--char-mute)' }}>{task.unidade}</span>}
+            <span style={{
+              marginLeft: 'auto', fontSize: 11,
+              color: metaBatida ? 'var(--moss)' : 'var(--char-mute)',
+              fontWeight: metaBatida ? 600 : 400,
+            }}>
+              {metaBatida ? 'meta batida' : `faltam ${formatarValor(alvo - atual)}`}
+            </span>
+          </div>
+          <LinhaProgresso atual={atual} alvo={alvo} cor={projectColor} />
+        </div>
+      )}
+      {(prev || next || alvo !== undefined) && (
+        <div onClick={e => e.stopPropagation()} style={{ display: 'flex', gap: 4, marginTop: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
+          {alvo !== undefined && (
+            <div style={{ marginRight: 'auto' }}>
+              <BotoesContador atual={atual} alvo={alvo} onDefinir={onDefinirContador} />
+            </div>
+          )}
           {prev && (
             <button
               onClick={() => onMove(prev)}
@@ -413,6 +442,11 @@ export default function ProjectDetail({ project: initialProject, onBack, store }
   const handleUpdateTask = (data: Omit<Task, 'id' | 'projectId' | 'order' | 'createdAt' | 'updatedAt'>) => {
     if (editTask) {
       store.updateTask(editTask.id, data);
+      // Baixar a meta pra um valor que o contador já alcançou também conclui a etapa.
+      const atual = store.tasks.find(t => t.id === editTask.id)?.valorAtual ?? 0;
+      if (data.valorAlvo !== undefined && atual >= data.valorAlvo && data.status !== 'concluido') {
+        store.moveTask(editTask.id, 'concluido');
+      }
       setEditTask(null);
       setShowEditTaskFromDetail(false);
     }
@@ -611,6 +645,7 @@ export default function ProjectDetail({ project: initialProject, onBack, store }
                         projectColor={project.color}
                         onOpen={() => setDetailTask(task)}
                         onMove={s => handleMoveTask(task.id, s)}
+                        onDefinirContador={valor => store.definirContador(task.id, valor)}
                         onDragStart={() => setDraggingTaskId(task.id)}
                         onDragEnd={clearDragState}
                         onDragOverCard={(e: React.DragEvent) => {
@@ -680,6 +715,7 @@ export default function ProjectDetail({ project: initialProject, onBack, store }
           onMove={s => handleMoveTask(detailTask.id, s)}
           onToggleChecklist={itemId => handleToggleChecklist(detailTask.id, itemId)}
           onReorderChecklist={novaOrdem => handleReorderChecklist(detailTask.id, novaOrdem)}
+          onDefinirContador={valor => store.definirContador(detailTask.id, valor)}
         />
       )}
 

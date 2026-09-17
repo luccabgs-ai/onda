@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Task, Priority, TaskStatus, ChecklistItem } from '@/lib/types';
 import { IcClose } from '@/components/ui/icons';
+import { formatarValor, lerValor } from './ProgressoTarefa';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -37,12 +38,17 @@ export default function TaskFormModal({ task, projectId: _projectId, initialStat
   const [status] = useState<TaskStatus>(task?.status ?? initialStatus ?? 'a_fazer');
   const [checklist, setChecklist] = useState<ChecklistItem[]>(task?.checklist ?? []);
   const [newItem, setNewItem] = useState('');
+  const [mensuravel, setMensuravel] = useState(task?.valorAlvo !== undefined);
+  const [alvoTexto, setAlvoTexto] = useState(task?.valorAlvo !== undefined ? formatarValor(task.valorAlvo) : '');
+  const [unidade, setUnidade] = useState(task?.unidade ?? '');
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [dragOverPos, setDragOverPos] = useState<'before' | 'after' | null>(null);
 
   const isEdit = !!task;
-  const canSave = title.trim().length > 0;
+  const alvo = lerValor(alvoTexto);
+  const alvoValido = Number.isFinite(alvo) && alvo > 0;
+  const canSave = title.trim().length > 0 && (!mensuravel || alvoValido);
 
   const addItem = () => {
     const t = newItem.trim();
@@ -80,6 +86,10 @@ export default function TaskFormModal({ task, projectId: _projectId, initialStat
       priority,
       dueDate: dueDate || undefined,
       checklist,
+      // O contador (valorAtual) fica de fora de propósito: salvar o formulário nunca
+      // sobrescreve o progresso já registrado.
+      valorAlvo: mensuravel ? alvo : undefined,
+      unidade: mensuravel ? unidade.trim() || undefined : undefined,
       status,
     });
   };
@@ -222,6 +232,65 @@ export default function TaskFormModal({ task, projectId: _projectId, initialStat
                 style={{ ...inputStyle, padding: '8px 12px' }}
               />
             </div>
+          </div>
+
+          {/* Mensurável */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button
+                id="tarefa-mensuravel"
+                role="switch"
+                aria-checked={mensuravel}
+                onClick={() => setMensuravel(m => !m)}
+                style={{
+                  width: 36, height: 20, borderRadius: 10, flexShrink: 0, position: 'relative',
+                  background: mensuravel ? 'var(--ink)' : 'rgba(27,54,93,0.22)',
+                  transition: 'background 0.15s',
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 2, left: 2, width: 16, height: 16, borderRadius: '50%',
+                  background: 'var(--washi)',
+                  transform: mensuravel ? 'translateX(16px)' : 'translateX(0)',
+                  transition: 'transform 0.15s',
+                }} />
+              </button>
+              <label htmlFor="tarefa-mensuravel" style={{ display: 'flex', flexDirection: 'column', cursor: 'pointer' }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--char)' }}>Acompanhar por número</span>
+                <span style={{ fontSize: 11.5, color: 'var(--char-mute)' }}>
+                  Define uma meta e conta até ela — ao bater, a etapa vai pra Concluído
+                </span>
+              </label>
+            </div>
+            {mensuravel && (
+              <div style={{ display: 'flex', gap: 16, padding: 14, borderRadius: 6, border: '1px dashed rgba(27,54,93,0.22)' }}>
+                <div style={{ flex: 1 }}>
+                  <label htmlFor="tarefa-alvo" style={{ display: 'block', fontSize: 11, fontWeight: 500, color: 'var(--char-soft)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                    Meta *
+                  </label>
+                  <input
+                    id="tarefa-alvo"
+                    inputMode="decimal"
+                    value={alvoTexto}
+                    onChange={e => setAlvoTexto(e.target.value)}
+                    placeholder="5"
+                    style={{ ...inputStyle, borderColor: alvoTexto && !alvoValido ? 'var(--hanko)' : undefined }}
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label htmlFor="tarefa-unidade" style={{ display: 'block', fontSize: 11, fontWeight: 500, color: 'var(--char-soft)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
+                    Unidade
+                  </label>
+                  <input
+                    id="tarefa-unidade"
+                    value={unidade}
+                    onChange={e => setUnidade(e.target.value)}
+                    placeholder="artigos, km, páginas…"
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Checklist */}
