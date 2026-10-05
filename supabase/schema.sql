@@ -113,3 +113,23 @@ create table rituais (
   criado_em text not null,
   atualizado_em text not null
 );
+
+-- Organização: um ciclo por período (semana/mês/semestre/ano), id = `${escala}-${inicio}`.
+-- Só nasce quando algo é escrito nele. `itens` = metas (sim/não) e indicadores (número x alvo).
+create table ciclos (
+  id text primary key,
+  escala text not null,
+  inicio text not null,
+  fim text not null,
+  foco text,
+  itens jsonb not null default '[]',
+  meio_nota text,
+  meio_em text,
+  nota integer,
+  funcionou text,
+  nao_funcionou text,
+  levar text,
+  fechado_em text,
+  criado_em text not null,
+  atualizado_em text not null
+);

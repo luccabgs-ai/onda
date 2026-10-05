@@ -13,6 +13,7 @@ import CronometrosScreen from '@/components/cronometros/CronometrosScreen';
 import CronometroNotificacao from '@/components/cronometros/CronometroNotificacao';
 import RevisaoHabitosModal from '@/components/habitos/RevisaoHabitosModal';
 import ObjetivosScreen from '@/components/objetivos/ObjetivosScreen';
+import OrganizacaoScreen from '@/components/organizacao/OrganizacaoScreen';
 import { useProjectsStore } from '@/lib/projectsStore';
 import { useCalendarStore } from '@/lib/calendarStore';
 import { useHabitsStore } from '@/lib/habitsStore';
@@ -20,6 +21,7 @@ import { useCronometrosStore } from '@/lib/cronometrosStore';
 import { useCronometroSessao } from '@/lib/cronometroSessaoStore';
 import { useObjetivosStore } from '@/lib/objetivosStore';
 import { useRituaisStore } from '@/lib/rituaisStore';
+import { useCiclosStore } from '@/lib/ciclosStore';
 import { useFalhasDeGravacao, limparFalhasDeGravacao } from '@/lib/gravacao';
 import { toDateStr } from '@/lib/nutricao';
 import { Project } from '@/lib/types';
@@ -39,13 +41,14 @@ export default function Home() {
   const cronometroSessao = useCronometroSessao();
   const objetivosStore = useObjetivosStore();
   const rituaisStore = useRituaisStore();
+  const ciclosStore = useCiclosStore();
   const [activeProject, setActiveProject] = useState<Project | null>(null);
 
   // Check-in real: existe registro do ritual da manhã de hoje?
   const didCheckIn = !!rituaisStore.registroDe(hojeStr, 'manha');
 
   const erroConexao = store.erro || calendarStore.erro || habitsStore.erro
-    || cronometrosStore.erro || objetivosStore.erro || rituaisStore.erro;
+    || cronometrosStore.erro || objetivosStore.erro || rituaisStore.erro || ciclosStore.erro;
   const falhasGravacao = useFalhasDeGravacao();
 
   useEffect(() => {
@@ -170,6 +173,7 @@ export default function Home() {
         {screen === 'objetivos' && (
           <ObjetivosScreen objetivosStore={objetivosStore} habitsStore={habitsStore} />
         )}
+        {screen === 'organizacao' && <OrganizacaoScreen ciclosStore={ciclosStore} />}
         {screen === 'projetos' && !activeProject && (
           <ProjetosScreen onOpenProject={setActiveProject} store={store} />
         )}

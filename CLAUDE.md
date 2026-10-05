@@ -6,9 +6,9 @@ App pessoal de organização de vida do Lucca — único usuário, em português
 japonesa (papel washi, tinta azul, selo hanko). Hospedado na Vercel em `onda-self.vercel.app`,
 atrás de uma senha só (sem contas de usuário).
 
-Telas: **Hoje** (painel do dia), **Áreas**, **Objetivos** (+ metas), **Projetos** (quadro kanban
-por projeto), **Calendário**, **Hábitos**, **Cronômetros**, **Ritual** (check-in da manhã e
-check-out da noite) e **Companheira**.
+Telas: **Hoje** (painel do dia), **Áreas**, **Objetivos** (+ metas), **Organização** (ciclos
+de semana/mês/semestre/ano), **Projetos** (quadro kanban por projeto), **Calendário**,
+**Hábitos**, **Cronômetros**, **Ritual** (check-in da manhã e check-out da noite) e **Companheira**.
 
 **A Companheira ainda é maquete:** `CompanheiraScreen.tsx` responde com frases fixas escolhidas
 por regex, com números e nomes inventados. Não chama API nem lê dado real — não trate o que ela
@@ -33,7 +33,7 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
 - **O navegador nunca fala com o Supabase.** Só o servidor, via `lib/db.ts` (chave
   `service_role`, RLS desligado). O navegador chama as rotas `app/api/*`.
 - **Um store por domínio** em `lib/*Store.ts` (`projectsStore`, `habitsStore`, `calendarStore`,
-  `cronometrosStore`, `objetivosStore`, `rituaisStore`). Todos são hooks instanciados **uma vez**
+  `cronometrosStore`, `objetivosStore`, `rituaisStore`, `ciclosStore`). Todos são hooks instanciados **uma vez**
   em `app/page.tsx` e passados por prop — não há contexto global.
 - **Padrão de cada store:** carrega com `useRetryFetch` (retenta com espera e expõe `erro`);
   cada mutação atualiza o estado local na hora e dispara a gravação com `gravar()` de
@@ -74,6 +74,14 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
 - **Tarefa mensurável** (`valorAlvo`, `valorAtual`, `unidade` em `tasks`): bater a meta move a
   etapa pra Concluído; cair abaixo dela devolve pra Em Andamento. O formulário de editar tarefa
   **nunca envia `valorAtual`**, senão salvar apagaria o progresso.
+- **Organização / ciclos** (`lib/ciclos.ts`): cada escala (semana seg–dom, mês, semestre jan–jun
+  / jul–dez, ano) tem um ciclo por período, id = `${escala}-${inicio}`, que só nasce quando algo
+  é escrito nele. Início = linha de chegada (`foco`) + `itens` (metas sim/não e indicadores com
+  alvo "pelo menos"/"no máximo"); meio = ponto de redirecionamento (`meioNota`/`meioEm`); fim =
+  revisão e `fechadoEm`. O "momento" (`momentoDoCiclo`) é derivado da data, nunca gravado. A
+  rota `PATCH /api/ciclos/[id]` também cria a linha se ela não existir (o cliente manda sempre
+  `escala`/`inicio`/`fim`), pra não haver corrida entre criar e atualizar. As quatro escalas
+  ainda usam a mesma tela; o que difere entre elas fica em `ESCALAS`.
 - **Ritual**: no máximo um registro por dia e por tipo (id = `${data}-${tipo}`), gravado com
   upsert. O check-in da manhã é o que acende o selo na barra lateral.
 

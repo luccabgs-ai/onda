@@ -190,3 +190,46 @@ export interface Meta {
   criadoEm: string;
   atualizadoEm: string;
 }
+
+/** Escalas de organização — cada uma é um ciclo com início, meio e fim (linha de chegada). */
+export type CicloEscala = 'semana' | 'mes' | 'semestre' | 'ano';
+
+/**
+ * Um compromisso do ciclo. 'meta' é binária (cumpri ou não); 'indicador' é um número medido
+ * contra um alvo — `sentido` diz se o alvo é piso ('mais': pelo menos X) ou teto ('menos': no máximo X).
+ */
+export type CicloItemTipo = 'meta' | 'indicador';
+
+export interface CicloItem {
+  id: string;
+  tipo: CicloItemTipo;
+  titulo: string;
+  areaId?: string;
+  feito?: boolean;              // meta
+  alvo?: number;                // indicador
+  atual?: number;               // indicador — ausente = ainda não medido
+  unidade?: string;             // indicador
+  sentido?: 'mais' | 'menos';   // indicador
+}
+
+/**
+ * O planejamento de um período (semana/mês/semestre/ano). Só passa a existir no banco quando
+ * algo é escrito nele. id = `${escala}-${inicio}` — no máximo um por período, como o ritual.
+ */
+export interface Ciclo {
+  id: string;
+  escala: CicloEscala;
+  inicio: string;          // 'YYYY-MM-DD'
+  fim: string;             // 'YYYY-MM-DD', inclusivo
+  foco?: string;           // a linha de chegada: como quero que esse período termine
+  itens: CicloItem[];
+  meioNota?: string;       // ponto de redirecionamento no meio do período
+  meioEm?: string;         // ISO — quando o ponto do meio foi registrado
+  nota?: number;           // 1..5 — como foi o período, dada no fechamento
+  funcionou?: string;
+  naoFuncionou?: string;
+  levar?: string;          // o que vai pro próximo período
+  fechadoEm?: string;      // ISO — cruzou a linha de chegada
+  criadoEm: string;
+  atualizadoEm: string;
+}

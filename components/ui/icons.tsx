@@ -203,6 +203,13 @@ export const IcTarget = ({ size = 20, stroke = 'currentColor', sw = 1.5 }: IconP
   </svg>
 );
 
+export const IcFlag = ({ size = 20, stroke = 'currentColor', sw = 1.5 }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M5 21V4" />
+    <path d="M5 4h11l-2 4 2 4H5" />
+  </svg>
+);
+
 export const AREA_ICONS: Record<string, React.ComponentType<IconProps>> = {
   profissional: IcBriefcase,
   faculdade: IcBook,
