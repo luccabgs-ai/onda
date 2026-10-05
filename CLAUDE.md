@@ -10,6 +10,10 @@ Telas: **Hoje** (painel do dia), **Áreas**, **Objetivos** (+ metas), **Projetos
 por projeto), **Calendário**, **Hábitos**, **Cronômetros**, **Ritual** (check-in da manhã e
 check-out da noite) e **Companheira**.
 
+**A Companheira ainda é maquete:** `CompanheiraScreen.tsx` responde com frases fixas escolhidas
+por regex, com números e nomes inventados. Não chama API nem lê dado real — não trate o que ela
+diz como comportamento do app.
+
 ## Stack
 
 Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres) · Vercel.
@@ -19,9 +23,12 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
 
 ## Como o app é construído
 
-- **Nada de Tailwind na prática.** Estilo é `style={{}}` inline usando as variáveis de cor de
+- **Nada de Tailwind na prática.** Ele está instalado e importado em `globals.css`, mas não é
+  usado — não use. Estilo é `style={{}}` inline usando as variáveis de cor de
   `app/globals.css` (`--ink`, `--washi`, `--hanko`, `--moss`, `--char`, `--card-bg`…). Elas têm
-  versão noturna, então **nunca escreva cor literal** que só funcione num dos dois temas.
+  versão noturna em `html[data-night="true"]`, que `app/page.tsx` liga a partir das 20h, então
+  **nunca escreva cor literal** que só funcione num dos dois temas. O código antigo tem muito
+  `rgba(27,54,93,…)` e `color + '50'` escritos direto — é dívida, não padrão a copiar.
   Fontes: `.serif` (Cormorant Garamond), `.jp` (Noto Serif JP), Inter no corpo.
 - **O navegador nunca fala com o Supabase.** Só o servidor, via `lib/db.ts` (chave
   `service_role`, RLS desligado). O navegador chama as rotas `app/api/*`.
@@ -56,9 +63,10 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
   ser texto livre, evento do calendário, tarefa de projeto ou hábito. Ficam em
   `RitualRegistro.vitorias`. Sem ritual feito, a tela Hoje mostra um convite pro ritual em vez
   de inventar prioridades. Eventos de hoje aparecem sempre, fora dos 3 espaços.
-- **Hábitos de hoje** são ordenados assim: agendados primeiro; dentro deles, quem tem horário
-  em ordem cronológica; o resto pela área mais negligenciada. A exclamação vermelha no pill só
-  aparece quando a área em baixa é de fato o motivo da posição.
+- **Hábitos de hoje** são ordenados assim: agendados primeiro; dentro de cada grupo (agendados e
+  não agendados), quem tem horário vem antes, em ordem cronológica; entre os sem horário, a área
+  mais negligenciada primeiro. A exclamação vermelha no pill só aparece quando a área em baixa é
+  de fato o motivo da posição (agendado, sem horário, área abaixo do limiar).
 - **Votar é alternância, concluir é idempotente.** `votar()` liga/desliga o voto do dia;
   `completarHabito()` só marca se ainda não estiver marcado — é o que qualquer gatilho
   automático deve usar (cronômetro que termina, popup de hábitos de ontem), pra nunca desmarcar
