@@ -8,11 +8,7 @@ atrás de uma senha só (sem contas de usuário).
 
 Telas: **Hoje** (painel do dia), **Áreas**, **Objetivos** (+ metas), **Organização** (ciclos
 de semana/mês/semestre/ano), **Projetos** (quadro kanban por projeto), **Calendário**,
-**Hábitos**, **Cronômetros**, **Ritual** (check-in da manhã e check-out da noite) e **Companheira**.
-
-**A Companheira ainda é maquete:** `CompanheiraScreen.tsx` responde com frases fixas escolhidas
-por regex, com números e nomes inventados. Não chama API nem lê dado real — não trate o que ela
-diz como comportamento do app.
+**Hábitos**, **Cronômetros** e **Ritual** (check-in da manhã e check-out da noite).
 
 ## Stack
 
@@ -95,8 +91,8 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
   `<div onClick>`, nunca `<button>` — HTML inválido faz o navegador remontar o DOM e a área
   clicável sai do lugar. E não repita o `onChange` do Checkbox quando a linha já alterna: o
   clique borbulha e alterna duas vezes.
-- **Lint tem base de 5 problemas** (1 erro proposital de `setState` em efeito no
-  `cronometroSessaoStore` + 4 avisos de variável não usada). Esse número pode **cair**, nunca
+- **Lint tem base de 4 problemas** (1 erro proposital de `setState` em efeito no
+  `cronometroSessaoStore` + 3 avisos de variável não usada). Esse número pode **cair**, nunca
   subir. Pra ler `localStorage` em componente novo, use inicializador do `useState`, não efeito.
 - **`proxy.ts`** bloqueia tudo que não está no `matcher`. Ao adicionar asset público novo (tipo
   `icon.svg`), inclua lá, senão nem o navegador nem o Google conseguem buscar.

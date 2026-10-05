@@ -4,7 +4,6 @@ import Sidebar from '@/components/Sidebar';
 import HojeScreen from '@/components/hoje/HojeScreen';
 import AreasScreen from '@/components/areas/AreasScreen';
 import RitualScreen from '@/components/ritual/RitualScreen';
-import CompanheiraScreen from '@/components/companheira/CompanheiraScreen';
 import ProjetosScreen from '@/components/projetos/ProjetosScreen';
 import ProjectDetail from '@/components/projetos/ProjectDetail';
 import CalendarioScreen from '@/components/calendario/CalendarioScreen';
@@ -143,7 +142,7 @@ export default function Home() {
         style={{
           flex: 1,
           height: '100vh',
-          overflow: screen === 'companheira' ? 'hidden' : 'auto',
+          overflow: 'auto',
         }}
         className="washi-bg"
       >
@@ -194,7 +193,6 @@ export default function Home() {
         {screen === 'cronometros' && (
           <CronometrosScreen cronometrosStore={cronometrosStore} sessaoStore={cronometroSessao} habitsStore={habitsStore} />
         )}
-        {screen === 'companheira' && <CompanheiraScreen />}
       </main>
     </div>
   );

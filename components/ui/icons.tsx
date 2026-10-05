@@ -40,12 +40,6 @@ export const IcLeaf = ({ size = 20, stroke = 'currentColor', sw = 1.5 }: IconPro
   </svg>
 );
 
-export const IcChat = ({ size = 20, stroke = 'currentColor', sw = 1.5 }: IconProps) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 5h16v11H8l-4 4z" />
-  </svg>
-);
-
 export const IcCheck = ({ size = 16, stroke = 'currentColor', sw = 2 }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 12.5l5 5 11-11" />
