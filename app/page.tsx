@@ -172,7 +172,15 @@ export default function Home() {
         {screen === 'objetivos' && (
           <ObjetivosScreen objetivosStore={objetivosStore} habitsStore={habitsStore} />
         )}
-        {screen === 'organizacao' && <OrganizacaoScreen ciclosStore={ciclosStore} />}
+        {screen === 'organizacao' && (
+          <OrganizacaoScreen
+            ciclosStore={ciclosStore}
+            habitsStore={habitsStore}
+            calendarStore={calendarStore}
+            rituaisStore={rituaisStore}
+            projectsStore={store}
+          />
+        )}
         {screen === 'projetos' && !activeProject && (
           <ProjetosScreen onOpenProject={setActiveProject} store={store} />
         )}

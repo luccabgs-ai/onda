@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { CicloItem, CicloItemTipo } from '@/lib/types';
 import { AREAS } from '@/lib/data';
-import { itemAtingido, progressoDoItem } from '@/lib/ciclos';
+import { itemAtingido, progressoDoItem, Ritmo } from '@/lib/ciclos';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { IcEdit, IcTrash } from '@/components/ui/icons';
 import { tinta, campoStyle, botaoPrimario, botaoLink } from './estilo';
@@ -12,14 +12,16 @@ export const descreverAlvo = (item: CicloItem) =>
 
 // ── Formulário (novo e editar) ────────────────────────────────────────────────
 
-export function ItemForm({ tipo, inicial, onSalvar, onCancelar }: {
+export function ItemForm({ tipo, inicial, areaInicial, onSalvar, onCancelar }: {
   tipo: CicloItemTipo;
   inicial?: CicloItem;
+  areaInicial?: string;   // item novo criado de dentro de uma área (tela do ano)
   onSalvar: (data: Omit<CicloItem, 'id' | 'feito' | 'atual'>) => void;
   onCancelar: () => void;
 }) {
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '');
-  const [areaId, setAreaId] = useState(inicial?.areaId ?? '');
+  const [areaId, setAreaId] = useState(inicial?.areaId ?? areaInicial ?? '');
+  const [acumula, setAcumula] = useState(inicial?.acumula !== false);
   const [alvo, setAlvo] = useState(inicial?.alvo !== undefined ? String(inicial.alvo) : '');
   const [unidade, setUnidade] = useState(inicial?.unidade ?? '');
   const [sentido, setSentido] = useState<'mais' | 'menos'>(inicial?.sentido ?? 'mais');
@@ -36,6 +38,7 @@ export function ItemForm({ tipo, inicial, onSalvar, onCancelar }: {
       alvo: tipo === 'indicador' ? alvoNum : undefined,
       unidade: tipo === 'indicador' ? (unidade.trim() || undefined) : undefined,
       sentido: tipo === 'indicador' ? sentido : undefined,
+      acumula: tipo === 'indicador' ? acumula : undefined,
     });
   };
 
@@ -90,6 +93,16 @@ export function ItemForm({ tipo, inicial, onSalvar, onCancelar }: {
           {inicial ? 'salvar' : 'adicionar'}
         </button>
       </div>
+      {tipo === 'indicador' && (
+        // A linha inteira alterna — o Checkbox fica sem onChange pro clique não alternar duas vezes.
+        <div onClick={() => setAcumula(a => !a)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', width: 'fit-content' }}>
+          <Checkbox checked={acumula} size={15} />
+          <span style={{ fontSize: 12, color: 'var(--char-soft)' }}>
+            acumula ao longo do período
+            <span style={{ color: 'var(--char-mute)' }}> — mostra se você está no ritmo. Desmarque pra médias, como horas de sono.</span>
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -136,8 +149,26 @@ function ValorAtual({ item, onDefinir, onAjustar }: {
 
 // ── Linha de item ─────────────────────────────────────────────────────────────
 
-export function ItemLinha({ item, onAlternar, onDefinirAtual, onAjustar, onEditar, onRemover }: {
+/** O que o ritmo diz, em palavras, e com que cor. */
+function textoDoRitmo(r: Ritmo, item: CicloItem): { texto: string; cor: string } {
+  const un = item.unidade ? ` ${item.unidade}` : '';
+  const arred = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
+  switch (r.estado) {
+    case 'sem_medida': return { texto: 'sem medição ainda', cor: 'var(--char-mute)' };
+    case 'batido': return { texto: 'alvo batido', cor: 'var(--moss)' };
+    case 'no_ritmo': return { texto: 'no ritmo', cor: 'var(--char-mute)' };
+    case 'atras': return { texto: `atrás do ritmo · o ritmo pede ~${arred(r.esperado ?? 0)}${un}`, cor: 'var(--hanko)' };
+    case 'folga': return { texto: `folga de ${arred((item.alvo ?? 0) - (item.atual ?? 0))}${un}`, cor: 'var(--char-mute)' };
+    case 'acima': return { texto: 'acima do ritmo', cor: 'var(--hanko)' };
+    case 'estourou': return { texto: 'passou do teto', cor: 'var(--hanko)' };
+    case 'no_alvo': return { texto: 'no alvo', cor: 'var(--moss)' };
+    case 'fora_do_alvo': return { texto: 'fora do alvo', cor: 'var(--char-mute)' };
+  }
+}
+
+export function ItemLinha({ item, ritmo, onAlternar, onDefinirAtual, onAjustar, onEditar, onRemover }: {
   item: CicloItem;
+  ritmo?: Ritmo | null;
   onAlternar: () => void;
   onDefinirAtual: (v: number | undefined) => void;
   onAjustar: (delta: number) => void;
@@ -200,16 +231,41 @@ export function ItemLinha({ item, onAlternar, onDefinirAtual, onAjustar, onEdita
         )}
       </div>
 
-      {item.tipo === 'indicador' && (
-        <div style={{ height: 3, borderRadius: 2, background: tinta(8), overflow: 'hidden', marginTop: 8 }}>
-          <div style={{
-            height: '100%',
-            width: `${progressoDoItem(item) * 100}%`,
-            background: atingido ? 'var(--moss)' : 'var(--ink)',
-            transition: 'width 0.3s ease',
-          }} />
-        </div>
-      )}
+      {item.tipo === 'indicador' && (() => {
+        // Teto que acumula (gasto) enche conforme se consome; o resto usa o progresso de sempre.
+        const consumo = item.sentido === 'menos' && item.acumula !== false && item.alvo
+          ? Math.min(1, (item.atual ?? 0) / item.alvo)
+          : progressoDoItem(item);
+        const ruim = ritmo && ['atras', 'acima', 'estourou'].includes(ritmo.estado);
+        const txt = ritmo && textoDoRitmo(ritmo, item);
+        return (
+          <>
+            <div style={{ position: 'relative', height: 5, borderRadius: 3, background: tinta(9), marginTop: 9 }}>
+              <div style={{
+                position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 3,
+                width: `${consumo * 100}%`,
+                background: ruim ? 'var(--hanko)' : atingido && item.sentido !== 'menos' ? 'var(--moss)' : 'var(--ink)',
+                opacity: ruim ? 0.75 : 0.6,
+                transition: 'width 0.3s ease',
+              }} />
+              {ritmo?.marca !== undefined && (
+                <span title="onde o ritmo diz que você deveria estar hoje" style={{
+                  position: 'absolute', top: -4, left: `${ritmo.marca * 100}%`, width: 2, height: 13,
+                  borderRadius: 1, background: 'var(--char-soft)', transform: 'translateX(-1px)',
+                }} />
+              )}
+            </div>
+            {txt && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', fontSize: 11, marginTop: 5 }}>
+                <span style={{ color: txt.cor }}>{txt.texto}</span>
+                <span style={{ color: 'var(--char-mute)' }}>
+                  {item.acumula === false ? 'média — sem ritmo' : item.sentido === 'menos' ? 'teto do período' : 'acumula no período'}
+                </span>
+              </div>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }

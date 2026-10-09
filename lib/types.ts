@@ -210,6 +210,8 @@ export interface CicloItem {
   atual?: number;               // indicador — ausente = ainda não medido
   unidade?: string;             // indicador
   sentido?: 'mais' | 'menos';   // indicador
+  acumula?: boolean;            // indicador — soma ao longo do período (treinos, gasto) e por isso tem ritmo;
+                                // false = média ou valor pontual (horas de sono), só comparado com o alvo. Ausente = true.
 }
 
 /**

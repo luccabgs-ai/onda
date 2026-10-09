@@ -1,23 +1,35 @@
 'use client';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { CicloEscala } from '@/lib/types';
 import { useCiclosStore } from '@/lib/ciclosStore';
+import { useHabitsStore } from '@/lib/habitsStore';
+import { useCalendarStore } from '@/lib/calendarStore';
+import { useRituaisStore } from '@/lib/rituaisStore';
+import { useProjectsStore } from '@/lib/projectsStore';
 import {
-  Periodo, ESCALAS, ORDEM_ESCALAS, periodoDe, periodoAnterior, periodoSeguinte, idDoCiclo,
+  Periodo, ESCALAS, ORDEM_ESCALAS, periodoDe, idDoCiclo,
   rotuloDoPeriodo, fracaoDecorrida, placarDoCiclo, momentoDoCiclo, MOMENTO_LABEL, hojeStr,
 } from '@/lib/ciclos';
 import { Card } from '@/components/ui/Card';
-import CicloPainel from './CicloPainel';
+import SemanaTela from './SemanaTela';
+import MesTela from './MesTela';
+import SemestreTela from './SemestreTela';
+import AnoTela from './AnoTela';
+import { TelaProps } from './partes';
 import { tinta, kickerStyle } from './estilo';
 
 interface Props {
   ciclosStore: ReturnType<typeof useCiclosStore>;
+  habitsStore: ReturnType<typeof useHabitsStore>;
+  calendarStore: ReturnType<typeof useCalendarStore>;
+  rituaisStore: ReturnType<typeof useRituaisStore>;
+  projectsStore: ReturnType<typeof useProjectsStore>;
 }
 
 const periodosAtuais = (hoje: string) =>
   Object.fromEntries(ORDEM_ESCALAS.map(e => [e, periodoDe(e, hoje)])) as Record<CicloEscala, Periodo>;
 
-export default function OrganizacaoScreen({ ciclosStore }: Props) {
+export default function OrganizacaoScreen({ ciclosStore, habitsStore, calendarStore, rituaisStore, projectsStore }: Props) {
   const [hoje] = useState(hojeStr);
   const [escala, setEscala] = useState<CicloEscala>('semana');
   // Período aberto em cada escala — começa no atual; as setas andam pra trás e pra frente.
@@ -26,13 +38,20 @@ export default function OrganizacaoScreen({ ciclosStore }: Props) {
   const atuais = periodosAtuais(hoje);
   const periodo = abertos[escala];
   const ehAtual = periodo.inicio === atuais[escala].inicio;
-  const rotulo = rotuloDoPeriodo(periodo);
 
   const navegar = (p: Periodo) => setAbertos(a => ({ ...a, [escala]: p }));
+  /** Pula pra outra escala já no período pedido — ex: clicar numa semana dentro do mês. */
+  const abrir = (p: Periodo) => {
+    setAbertos(a => ({ ...a, [p.escala]: p }));
+    setEscala(p.escala);
+    document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  const seta: React.CSSProperties = {
-    width: 32, height: 32, borderRadius: '50%', border: `1px solid ${tinta(18)}`,
-    color: 'var(--ink)', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  const tela: TelaProps = {
+    periodo, hoje, store: ciclosStore, ehAtual,
+    onNavegar: navegar,
+    onVoltarAtual: () => navegar(atuais[escala]),
+    onAbrir: abrir,
   };
 
   return (
@@ -95,34 +114,25 @@ export default function OrganizacaoScreen({ ciclosStore }: Props) {
         })}
       </div>
 
-      {/* Navegação entre períodos da escala escolhida */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-        <button onClick={() => navegar(periodoAnterior(periodo))} style={seta} title="período anterior">‹</button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-            <h2 className="serif" style={{ fontSize: 28, color: 'var(--ink)', margin: 0, fontWeight: 500 }}>{rotulo.titulo}</h2>
-            <span style={{ fontSize: 13, color: 'var(--char-mute)' }}>{rotulo.sub}</span>
-            {!ehAtual && (
-              <button onClick={() => navegar(atuais[escala])} style={{ fontSize: 11.5, color: 'var(--ink)', textDecoration: 'underline' }}>
-                voltar pro atual
-              </button>
-            )}
-          </div>
-        </div>
-        <button onClick={() => navegar(periodoSeguinte(periodo))} style={seta} title="próximo período">›</button>
-      </div>
-
       {!ciclosStore.loaded ? (
         <p style={{ fontSize: 13, color: 'var(--char-mute)', fontStyle: 'italic' }}>carregando…</p>
       ) : (
-        // A key remonta o painel ao trocar de período (os rascunhos dos campos recomeçam do
+        // A key remonta a tela ao trocar de período (os rascunhos dos campos recomeçam do
         // valor salvo) e também quando uma recarga depois de erro traz os dados de verdade.
-        <CicloPainel
-          key={`${idDoCiclo(periodo)}-${ciclosStore.erro}`}
-          periodo={periodo}
-          hoje={hoje}
-          store={ciclosStore}
-        />
+        <div key={`${idDoCiclo(periodo)}-${ciclosStore.erro}`}>
+          {escala === 'semana' && (
+            <SemanaTela
+              {...tela}
+              habitos={habitsStore.habitos}
+              tasks={projectsStore.tasks}
+              eventosDoDia={calendarStore.getEventsForDate}
+              registroDe={rituaisStore.registroDe}
+            />
+          )}
+          {escala === 'mes' && <MesTela {...tela} habitos={habitsStore.habitos} eventosDoDia={calendarStore.getEventsForDate} />}
+          {escala === 'semestre' && <SemestreTela {...tela} />}
+          {escala === 'ano' && <AnoTela {...tela} />}
+        </div>
       )}
     </div>
   );

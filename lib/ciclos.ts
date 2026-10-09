@@ -1,5 +1,5 @@
-import { Ciclo, CicloEscala, CicloItem } from './types';
-import { addDays, toDateStr } from './nutricao';
+import { Ciclo, CicloEscala, CicloItem, Habito } from './types';
+import { addDays, toDateStr, estaAgendadoEm } from './nutricao';
 
 export interface Periodo {
   escala: CicloEscala;
@@ -8,8 +8,8 @@ export interface Periodo {
 }
 
 /**
- * O que muda de uma escala pra outra. Hoje as quatro telas são iguais e só o texto difere —
- * quando cada escala ganhar formato próprio, é aqui que a diferença começa.
+ * Texto e prazos de cada escala. O formato de cada tela fica nos componentes próprios
+ * (SemanaTela = dias, MesTela = semanas, SemestreTela = meses, AnoTela = áreas e anel dos meses).
  */
 export const ESCALAS: Record<CicloEscala, {
   label: string;
@@ -157,3 +157,82 @@ export const MOMENTO_LABEL: Record<MomentoCiclo, string> = {
 };
 
 export const hojeStr = () => toDateStr(new Date());
+
+// ── Períodos dentro de períodos ───────────────────────────────────────────────
+
+/** A escala em que cada uma se divide: o mês é feito de semanas, o semestre de meses, o ano de semestres. */
+export const ESCALA_FILHA: Partial<Record<CicloEscala, CicloEscala>> = { mes: 'semana', semestre: 'mes', ano: 'semestre' };
+
+/** Os períodos de `escala` que tocam `p` — semanas que atravessam a virada do mês entram inteiras. */
+export function subperiodos(p: Periodo, escala: CicloEscala): Periodo[] {
+  const lista: Periodo[] = [];
+  for (let atual = periodoDe(escala, p.inicio); atual.inicio <= p.fim; atual = periodoSeguinte(atual)) lista.push(atual);
+  return lista;
+}
+
+export const diasDoPeriodo = (p: Periodo) => Array.from({ length: duracaoEmDias(p) }, (_, i) => addDays(p.inicio, i));
+
+export const nomeDoMesCurto = (p: Periodo) => MESES_CURTOS[partes(p.inicio)[1] - 1].replace(/^./, c => c.toUpperCase());
+
+// ── Ritmo dos indicadores ─────────────────────────────────────────────────────
+
+export type EstadoRitmo =
+  | 'sem_medida'
+  | 'batido'          // "pelo menos": alvo já alcançado
+  | 'no_ritmo'
+  | 'atras'
+  | 'folga'           // "no máximo": gastando abaixo do ritmo
+  | 'acima'           // "no máximo": gastando acima do ritmo
+  | 'estourou'        // "no máximo": passou do teto
+  | 'no_alvo'         // indicador que não acumula (média), ou período já terminado
+  | 'fora_do_alvo';
+
+export interface Ritmo {
+  estado: EstadoRitmo;
+  esperado?: number;   // onde o ritmo diz que o número deveria estar hoje
+  marca?: number;      // 0..1 — posição do tracinho de "hoje" no trilho
+}
+
+/**
+ * Compara o valor medido com onde ele deveria estar a esta altura do período. Só faz sentido
+ * pra indicador que acumula (treinos, páginas, gasto): o alvo inteiro é dividido pela fração do
+ * período já vivida. Indicador de média, e qualquer um em período fora de curso, só olha o alvo.
+ */
+export function ritmoDoIndicador(item: CicloItem, p: Periodo, hoje: string): Ritmo | null {
+  if (item.tipo !== 'indicador' || item.alvo === undefined) return null;
+  if (item.atual === undefined) return { estado: 'sem_medida' };
+  const menos = item.sentido === 'menos';
+  if (menos && item.atual > item.alvo) return { estado: 'estourou' };
+
+  const emCurso = hoje >= p.inicio && hoje <= p.fim;
+  if (item.acumula === false || !emCurso) return { estado: itemAtingido(item) ? 'no_alvo' : 'fora_do_alvo' };
+
+  // Só os dias que já acabaram: o treino de hoje ainda pode acontecer, então não pode pesar contra.
+  const frac = diasEntre(p.inicio, hoje) / duracaoEmDias(p);
+  const esperado = item.alvo * frac;
+  // Margem de meia unidade (contagens pequenas, tipo 4 treinos) ou 5% do alvo, o que for maior.
+  const margem = Math.max(0.5, item.alvo * 0.05);
+  if (menos) return { estado: item.atual <= esperado + margem ? 'folga' : 'acima', esperado, marca: frac };
+  if (item.atual >= item.alvo) return { estado: 'batido' };
+  return { estado: item.atual >= esperado - margem ? 'no_ritmo' : 'atras', esperado, marca: frac };
+}
+
+/** Estados de ritmo que contam como "indo bem" nos resumos. */
+export const ritmoBom = (r: Ritmo | null) => !!r && ['batido', 'no_ritmo', 'folga', 'no_alvo'].includes(r.estado);
+
+// ── Hábitos no dia (pro calor do calendário e pra faixa da semana) ────────────
+
+/** Hábitos que contam num dia: agendados nele (se já existiam) ou votados nele, como bônus. */
+export function habitosDoDia(habitos: Habito[], dia: string): { habito: Habito; votado: boolean }[] {
+  return habitos
+    .filter(h => h.votos[dia] || (toDateStr(new Date(h.criadoEm)) <= dia && estaAgendadoEm(h, dia)))
+    .map(h => ({ habito: h, votado: !!h.votos[dia] }));
+}
+
+/** De 0 a 1: votos do dia sobre os agendados. Voto fora do dia conta a favor, como na Bússola. */
+export function aproveitamentoDoDia(habitos: Habito[], dia: string): number {
+  const agendados = habitos.filter(h => toDateStr(new Date(h.criadoEm)) <= dia && estaAgendadoEm(h, dia)).length;
+  const votados = habitos.filter(h => h.votos[dia]).length;
+  if (agendados === 0) return votados > 0 ? 1 : 0;
+  return Math.min(1, votados / agendados);
+}
