@@ -13,6 +13,7 @@ import CronometroNotificacao from '@/components/cronometros/CronometroNotificaca
 import RevisaoHabitosModal from '@/components/habitos/RevisaoHabitosModal';
 import ObjetivosScreen from '@/components/objetivos/ObjetivosScreen';
 import OrganizacaoScreen from '@/components/organizacao/OrganizacaoScreen';
+import AppCelular, { AbaCelular } from '@/components/celular/AppCelular';
 import { useProjectsStore } from '@/lib/projectsStore';
 import { useCalendarStore } from '@/lib/calendarStore';
 import { useHabitsStore } from '@/lib/habitsStore';
@@ -23,6 +24,7 @@ import { useRituaisStore } from '@/lib/rituaisStore';
 import { useCiclosStore } from '@/lib/ciclosStore';
 import { useFalhasDeGravacao, limparFalhasDeGravacao } from '@/lib/gravacao';
 import { toDateStr } from '@/lib/nutricao';
+import { useTelaPequena } from '@/lib/useTelaPequena';
 import { Project } from '@/lib/types';
 
 export default function Home() {
@@ -42,6 +44,9 @@ export default function Home() {
   const rituaisStore = useRituaisStore();
   const ciclosStore = useCiclosStore();
   const [activeProject, setActiveProject] = useState<Project | null>(null);
+  // Celular: app próprio de 4 abas. O PC continua com a barra lateral e as telas de sempre.
+  const telaPequena = useTelaPequena();
+  const [abaCelular, setAbaCelular] = useState<AbaCelular>('hoje');
 
   // Check-in real: existe registro do ritual da manhã de hoje?
   const didCheckIn = !!rituaisStore.registroDe(hojeStr, 'manha');
@@ -59,7 +64,7 @@ export default function Home() {
       {(erroConexao || falhasGravacao > 0) && (
         <div style={{
           position: 'fixed',
-          top: 14,
+          top: 'max(14px, calc(env(safe-area-inset-top) + 8px))',
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 1000,
@@ -128,9 +133,24 @@ export default function Home() {
         cronometrosStore={cronometrosStore}
         sessaoStore={cronometroSessao}
         habitsStore={habitsStore}
-        onAbrirCronometros={() => setScreen('cronometros')}
+        onAbrirCronometros={() => (telaPequena ? setAbaCelular('foco') : setScreen('cronometros'))}
       />
       <RevisaoHabitosModal habitsStore={habitsStore} />
+      {telaPequena ? (
+        <AppCelular
+          aba={abaCelular}
+          onAba={setAbaCelular}
+          hour={hour}
+          projectsStore={store}
+          calendarStore={calendarStore}
+          habitsStore={habitsStore}
+          cronometrosStore={cronometrosStore}
+          sessaoStore={cronometroSessao}
+          objetivosStore={objetivosStore}
+          rituaisStore={rituaisStore}
+          ciclosStore={ciclosStore}
+        />
+      ) : (<>
       <Sidebar
         active={screen}
         onChange={setScreen}
@@ -202,6 +222,7 @@ export default function Home() {
           <CronometrosScreen cronometrosStore={cronometrosStore} sessaoStore={cronometroSessao} habitsStore={habitsStore} />
         )}
       </main>
+      </>)}
     </div>
   );
 }

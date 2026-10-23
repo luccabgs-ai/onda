@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/notificacoes/enviar?momento=manha", "schedule": "0 10 * * *" },
+    { "path": "/api/notificacoes/enviar?momento=meio", "schedule": "0 15 * * *" },
+    { "path": "/api/notificacoes/enviar?momento=noite", "schedule": "0 0 * * *" }
+  ]
+}

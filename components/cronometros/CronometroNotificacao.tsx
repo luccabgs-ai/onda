@@ -87,7 +87,7 @@ export default function CronometroNotificacao({ cronometrosStore, sessaoStore, h
       onClick={() => { onAbrirCronometros(); setToast(null); }}
       style={{
         position: 'fixed',
-        top: 14,
+        top: 'max(14px, calc(env(safe-area-inset-top) + 8px))',
         right: 20,
         zIndex: 1000,
         display: 'flex',

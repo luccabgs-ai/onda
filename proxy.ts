@@ -38,6 +38,8 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Tudo passa pela checagem, exceto a tela de senha, o endpoint de login e os assets do Next.
-  matcher: ['/((?!entrar|api/auth/login|_next/static|_next/image|favicon\\.ico|icon\\.svg).*)'],
+  // Tudo passa pela checagem, exceto a tela de senha, o endpoint de login, os assets do Next,
+  // os arquivos do app instalável (o navegador os busca sem cookie) e o disparo agendado de
+  // notificações, que se autentica com CRON_SECRET na própria rota.
+  matcher: ['/((?!entrar|api/auth/login|api/notificacoes/enviar|_next/static|_next/image|favicon\\.ico|icon\\.svg|apple-icon\\.png|icone-192\\.png|icone-512\\.png|manifest\\.webmanifest|sw\\.js).*)'],
 };

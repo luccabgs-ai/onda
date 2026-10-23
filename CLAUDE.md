@@ -10,12 +10,22 @@ Telas: **Hoje** (painel do dia), **Áreas**, **Objetivos** (+ metas), **Organiza
 de semana/mês/semestre/ano), **Projetos** (quadro kanban por projeto), **Calendário**,
 **Hábitos**, **Cronômetros** e **Ritual** (check-in da manhã e check-out da noite).
 
+No **celular** (tela até 768px) o app é outro: 4 abas — **Hoje**, **Foco** (cronômetro),
+**Projetos** e **Rumo** (objetivos + linha de chegada da semana) — em `components/celular/`.
+É instalável na tela inicial (PWA) e manda lembretes às 7h, 12h e 21h. O Lucca pediu que a
+versão de PC **não mude** por causa do celular: o que for de celular fica atrás de
+`useTelaPequena()`; antes de mexer numa tela de PC, pergunte.
+
 ## Stack
 
 Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres) · Vercel.
 
 - `npm run dev` (porta 3000) · `npm run build` · `npm run lint` · `npx tsc --noEmit`
-- `.env.local`: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_PASSWORD`.
+- `.env.local`: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `APP_PASSWORD`. Notificações
+  usam também `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` e `CRON_SECRET` (sem elas
+  o envio só fica desligado).
+- Esta máquina não tem Node instalado: baixe o oficial (nodejs.org) no scratchpad e use pelo
+  `PATH`. Pro build sem `.env.local`, passe valores falsos nas variáveis só no comando.
 
 ## Como o app é construído
 
@@ -94,6 +104,11 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
 - **Lint tem base de 4 problemas** (1 erro proposital de `setState` em efeito no
   `cronometroSessaoStore` + 3 avisos de variável não usada). Esse número pode **cair**, nunca
   subir. Pra ler `localStorage` em componente novo, use inicializador do `useState`, não efeito.
+- **Notificações**: `vercel.json` agenda `/api/notificacoes/enviar` às 10h, 15h e 0h **UTC**
+  (7h, 12h e 21h no Brasil); no plano Hobby chega em qualquer minuto daquela hora. A rota
+  autentica pelo `CRON_SECRET`, olha os rituais de hoje (data em `America/Sao_Paulo`) e não
+  manda o lembrete de um momento já feito. Aparelhos inscritos ficam em `push_inscricoes`.
+  No iPhone só funciona com o app instalado na tela inicial.
 - **`proxy.ts`** bloqueia tudo que não está no `matcher`. Ao adicionar asset público novo (tipo
   `icon.svg`), inclua lá, senão nem o navegador nem o Google conseguem buscar.
 - O Supabase já devolveu `JWT issued at future` de forma passageira. Se aparecer, tente de novo
@@ -111,9 +126,9 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
    login fica em `APP_PASSWORD`, no `.env.local` (pergunte ao Lucca; não a escreva em arquivo
    versionado). Testes e arquivos temporários vão pro diretório de scratchpad, nunca pro repo.
 5. Commit em português, descrevendo o efeito pro usuário e não o arquivo mexido.
-6. `git push origin main`, depois **sempre** `git checkout mobile-bottom-nav` + `git merge main`,
-   validar de novo, `git push origin mobile-bottom-nav`, voltar pra `main`. A `mobile-bottom-nav`
-   é o preview mobile e tem classes próprias (`mobile-screen`, `mobile-grid-1col`…) — ao
-   resolver conflito, mantenha a classe dela **e** o código novo.
+6. `git push origin main`. (A antiga branch `mobile-bottom-nav` foi aposentada: o celular agora
+   é o app de `components/celular/`, na própria `main`. As classes `mobile-*` que sobraram no
+   código não fazem nada na `main`.) Pra mostrar algo ao Lucca antes de publicar, suba numa
+   branch: a Vercel gera um link de preview que ele abre no celular.
 7. Não há ferramenta de navegador nesta máquina. Se a mudança for visual, diga claramente que
    não foi conferida na tela.

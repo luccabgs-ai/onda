@@ -133,3 +133,12 @@ create table ciclos (
   criado_em text not null,
   atualizado_em text not null
 );
+
+-- Celulares inscritos pra receber notificações (Web Push). Uma linha por aparelho/navegador.
+create table push_inscricoes (
+  endpoint text primary key,
+  p256dh text not null,
+  auth text not null,
+  aparelho text,
+  criado_em text not null
+);

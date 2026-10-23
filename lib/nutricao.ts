@@ -15,6 +15,21 @@ export const TODOS_OS_DIAS = [0, 1, 2, 3, 4, 5, 6];
 /** Abaixo disso, uma Área é considerada negligenciada (nudge da Hoje, card de Áreas, ordenação de hábitos). */
 export const LIMIAR_AREA_NEGLIGENCIADA = 0.25;
 
+/**
+ * Ordem dos hábitos de hoje (Hoje no PC e no celular): 1) agendados hoje primeiro; 2) dentro de
+ * cada grupo, quem tem horário vem em ordem cronológica — uma linha do tempo do dia; 3) entre os
+ * sem horário, a área mais negligenciada primeiro — puxa o olho pro que está sendo esquecido.
+ */
+export function ordenarHabitosDoDia(habitos: Habito[], hoje: string, nutridoMap: Record<string, number>): Habito[] {
+  return [...habitos].sort((a, b) => {
+    const agendadoDiff = Number(estaAgendadoEm(b, hoje)) - Number(estaAgendadoEm(a, hoje));
+    if (agendadoDiff !== 0) return agendadoDiff;
+    if (!!a.horario !== !!b.horario) return a.horario ? -1 : 1;
+    if (a.horario && b.horario) return a.horario.localeCompare(b.horario);
+    return (nutridoMap[a.areaId] ?? 1) - (nutridoMap[b.areaId] ?? 1);
+  });
+}
+
 /** Hábitos criados antes desse campo existir contam como "todo dia". */
 function diasSemanaDe(habito: Habito): number[] {
   return habito.diasSemana ?? TODOS_OS_DIAS;
