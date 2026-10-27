@@ -81,6 +81,14 @@ export default function AppCelular(props: Props) {
     if (meta) meta.setAttribute('content', hour >= 20 ? '#1A1208' : '#F5EFE0');
   }, [hour]);
 
+  // Reforço contra o zoom de pinça: o Safari do iPhone às vezes ignora o viewport e o
+  // touch-action, mas respeita cancelar o próprio evento de gesto (só existe no Safari).
+  useEffect(() => {
+    const bloquear = (e: Event) => e.preventDefault();
+    document.addEventListener('gesturestart', bloquear);
+    return () => document.removeEventListener('gesturestart', bloquear);
+  }, []);
+
   // Trocar de aba volta pro topo — cada aba tem a própria rolagem.
   const [rolagem, setRolagem] = useState<HTMLElement | null>(null);
   const trocar = (nova: AbaCelular) => {

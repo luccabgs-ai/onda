@@ -140,3 +140,12 @@ html[data-night="true"] .brush-divider {
 @keyframes ripple { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.4); opacity: 0; } }
 @keyframes drift  { 0% { transform: translateY(0); } 50% { transform: translateY(-3px); } 100% { transform: translateY(0); } }
 @keyframes pulse  { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+/* ── Celular: sem zoom acidental ─────────────────────────────────────────────
+   pan-x pan-y deixa rolar mas bloqueia a pinça e o toque duplo que dão zoom.
+   E o iPhone dá zoom sozinho ao tocar num campo com letra menor que 16px — por isso,
+   no celular, todo campo de texto fica com 16px. No PC nada disso se aplica. */
+@media (max-width: 768px) {
+  html, body { touch-action: pan-x pan-y; }
+  input, textarea, select { font-size: 16px !important; }
+}

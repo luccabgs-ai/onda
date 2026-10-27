@@ -11,6 +11,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  // Sem zoom de pinça no celular — o Lucca dava zoom sem querer. No computador o navegador
+  // ignora essas duas opções, então o zoom do teclado (Ctrl/Cmd +) continua funcionando.
+  maximumScale: 1,
+  userScalable: false,
   // cover: o app desenha atrás da barra de status e do indicador de início; o app de celular
   // compensa com env(safe-area-inset-*).
   viewportFit: 'cover',
