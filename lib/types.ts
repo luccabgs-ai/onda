@@ -109,7 +109,8 @@ export interface Project {
   updatedAt: string;
 }
 
-export type EventType = 'evento' | 'comemoracao' | 'lembrete';
+/** 'foco' = bloco de foco planejado na visão Dia do calendário (tem hora de fim e, opcional, tarefa). */
+export type EventType = 'evento' | 'comemoracao' | 'lembrete' | 'foco';
 
 export interface CalendarEvent {
   id: string;
@@ -122,6 +123,8 @@ export interface CalendarEvent {
   description?: string;
   location?: string;
   time?: string;      // 'HH:MM' if has time
+  endTime?: string;   // 'HH:MM' — fim no mesmo dia (blocos de foco e eventos com duração)
+  taskId?: string;    // bloco de foco: a tarefa planejada (ausente = foco livre)
   color?: string;
   createdAt: string;
   updatedAt: string;
@@ -156,6 +159,7 @@ export interface CronometroSessao {
   faseIniciouEm?: string;       // ISO — quando a fase atual começou (vira o "início" do bloco gravado)
   taskId?: string;              // no que está focando; ausente = foco livre
   rotulo?: string;              // nome opcional do foco livre ("estudar", "e-mails")
+  avulso?: { nome: string; fases: CronometroFase[] };  // sessão sem cronômetro salvo (bloco do calendário)
 }
 
 /** No que uma sessão de cronômetro vai focar: uma tarefa ou foco livre (com nome opcional). */

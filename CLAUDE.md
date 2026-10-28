@@ -95,6 +95,12 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
   qualquer tela); pular fase ou encerrar grava o tempo feito só se passou de
   `MINIMO_MIN_BLOCO_INTERROMPIDO` (5 min); reiniciar a fase descarta. Título, projeto e área da
   tarefa são copiados no bloco, pra o histórico sobreviver à tarefa apagada.
+- **Calendário, visão Dia** (`components/calendario/DiaView.tsx`): linha do tempo das 6h à meia-noite
+  com duas faixas — **plano** (eventos e blocos de foco) e **feito** (`sessoes_foco`). Bloco de foco é
+  um `CalendarEvent` com `type: 'foco'`, `endTime` e `taskId` opcional; aparece onde eventos já
+  aparecem. "Começar foco agora" inicia uma sessão **avulsa** (`iniciarAvulso`, sem cronômetro
+  salvo, com a duração do bloco) — por isso, pra achar o cronômetro de uma sessão use sempre
+  `presetDaSessao()`, nunca só `presets.find`.
 - **Ritual**: no máximo um registro por dia e por tipo (id = `${data}-${tipo}`), gravado com
   upsert. O check-in da manhã é o que acende o selo na barra lateral.
 

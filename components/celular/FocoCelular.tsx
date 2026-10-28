@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { CronometroPreset } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { useCronometrosStore, duracaoTotalMin } from '@/lib/cronometrosStore';
-import { useCronometroSessao } from '@/lib/cronometroSessaoStore';
+import { useCronometroSessao, presetDaSessao } from '@/lib/cronometroSessaoStore';
 import { useHabitsStore } from '@/lib/habitsStore';
 import { CronometroClock } from '@/components/cronometros/CronometroClock';
 import { tinta } from '@/components/organizacao/estilo';
@@ -107,7 +107,8 @@ function Relogio({ preset, sessaoStore, nomeHabito }: { preset: CronometroPreset
 export default function FocoCelular({ cronometrosStore, sessaoStore, habitsStore }: Props) {
   const { presets, loaded } = cronometrosStore;
   const { sessao, iniciar } = sessaoStore;
-  const ativo = sessao ? presets.find(p => p.id === sessao.presetId) : undefined;
+  // presetDaSessao: também acha a sessão avulsa de um bloco do calendário.
+  const ativo = sessao ? presetDaSessao(sessao, presets) : undefined;
   const nomeHabito = (p?: CronometroPreset) => p?.habitoId ? habitsStore.habitos.find(h => h.id === p.habitoId)?.acao : undefined;
   const ordenados = [...presets].sort((a, b) => Number(!!b.pronto) - Number(!!a.pronto));
 

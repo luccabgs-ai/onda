@@ -4,7 +4,7 @@ import { useProjectsStore } from '@/lib/projectsStore';
 import { useCalendarStore } from '@/lib/calendarStore';
 import { useHabitsStore } from '@/lib/habitsStore';
 import { useCronometrosStore } from '@/lib/cronometrosStore';
-import { useCronometroSessao } from '@/lib/cronometroSessaoStore';
+import { useCronometroSessao, presetDaSessao } from '@/lib/cronometroSessaoStore';
 import { useObjetivosStore } from '@/lib/objetivosStore';
 import { useRituaisStore } from '@/lib/rituaisStore';
 import { useCiclosStore } from '@/lib/ciclosStore';
@@ -52,7 +52,7 @@ function FaixaCronometro({ sessaoStore, cronometrosStore, onAbrir }: Pick<Props,
     return () => clearInterval(id);
   }, [sessao]);
 
-  const preset = sessao ? cronometrosStore.presets.find(p => p.id === sessao.presetId) : undefined;
+  const preset = sessao ? presetDaSessao(sessao, cronometrosStore.presets) : undefined;
   if (!sessao || !preset) return null;
   const fase = preset.fases[sessao.faseIndex];
   return (

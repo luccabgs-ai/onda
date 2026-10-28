@@ -13,6 +13,8 @@ interface Row {
   description: string | null;
   location: string | null;
   time: string | null;
+  end_time: string | null;
+  task_id: string | null;
   color: string | null;
   created_at: string;
   updated_at: string;
@@ -30,6 +32,8 @@ function rowToEvent(row: Row): CalendarEvent {
     description: row.description ?? undefined,
     location: row.location ?? undefined,
     time: row.time ?? undefined,
+    endTime: row.end_time ?? undefined,
+    taskId: row.task_id ?? undefined,
     color: row.color ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -55,6 +59,8 @@ export async function POST(request: NextRequest) {
     description: body.description ?? null,
     location: body.location ?? null,
     time: body.time ?? null,
+    end_time: body.endTime ?? null,
+    task_id: body.taskId ?? null,
     color: body.color ?? null,
     created_at: body.createdAt,
     updated_at: body.updatedAt,
