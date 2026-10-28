@@ -15,6 +15,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if ('description' in body) patch.description = body.description ?? null;
   if ('location' in body) patch.location = body.location ?? null;
   if ('time' in body) patch.time = body.time ?? null;
+  if ('endTime' in body) patch.end_time = body.endTime ?? null;
+  if ('taskId' in body) patch.task_id = body.taskId ?? null;
   if ('color' in body) patch.color = body.color ?? null;
   patch.updated_at = new Date().toISOString();
 

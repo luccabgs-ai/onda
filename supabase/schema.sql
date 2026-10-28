@@ -59,6 +59,8 @@ create table calendar_events (
   description text,
   location text,
   time text,
+  end_time text,  -- 'HH:MM', fim no mesmo dia (blocos de foco)
+  task_id text,   -- bloco de foco: tarefa planejada
   color text,
   created_at text not null,
   updated_at text not null

@@ -24,7 +24,7 @@ import { useCiclosStore } from '@/lib/ciclosStore';
 import { useFocoStore, blocosDoDia, somaMinutos } from '@/lib/focoStore';
 import { useFalhasDeGravacao, limparFalhasDeGravacao } from '@/lib/gravacao';
 import { toDateStr } from '@/lib/nutricao';
-import { Project } from '@/lib/types';
+import { CalendarEvent, Project } from '@/lib/types';
 
 export default function Home() {
   const [screen, setScreen] = useState('hoje');
@@ -47,6 +47,15 @@ export default function Home() {
   const [tarefaParaFocar, setTarefaParaFocar] = useState<string | null>(null);
   const focarTarefa = (taskId: string) => { setTarefaParaFocar(taskId); setScreen('cronometros'); };
   const clearTarefaParaFocar = useCallback(() => setTarefaParaFocar(null), []);
+  // Bloco de foco do calendário: cronômetro avulso com a duração exata do bloco, já na tarefa.
+  const comecarBlocoDoCalendario = (ev: CalendarEvent) => {
+    if (!ev.time || cronometroSessao.sessao) return;
+    const [h, m] = ev.time.split(':').map(Number);
+    const [hf, mf] = (ev.endTime ?? '').split(':').map(Number);
+    const minutos = ev.endTime ? Math.max(5, hf * 60 + mf - (h * 60 + m)) : 60;
+    cronometroSessao.iniciarAvulso(ev.title, minutos, ev.taskId ? { taskId: ev.taskId } : { rotulo: ev.title });
+    setScreen('cronometros');
+  };
   const [activeProject, setActiveProject] = useState<Project | null>(null);
 
   // Check-in real: existe registro do ritual da manhã de hoje?
@@ -203,7 +212,15 @@ export default function Home() {
           />
         )}
         {screen === 'calendario' && (
-          <CalendarioScreen calendarStore={calendarStore} projectsStore={store} />
+          <CalendarioScreen
+            calendarStore={calendarStore}
+            projectsStore={store}
+            sessoesFoco={focoStore.sessoes}
+            vitoriasTaskIds={(rituaisStore.registroDe(hojeStr, 'manha')?.vitorias ?? [])
+              .filter(v => v.origem === 'task' && v.taskId).map(v => v.taskId!)}
+            sessaoRodando={!!cronometroSessao.sessao}
+            onComecarFoco={comecarBlocoDoCalendario}
+          />
         )}
         {screen === 'ritual'      && (
           <RitualScreen habitsStore={habitsStore} rituaisStore={rituaisStore} projectsStore={store} calendarStore={calendarStore} />

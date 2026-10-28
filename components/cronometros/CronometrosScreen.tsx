@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { AlvoFoco, CronometroPreset, Habito } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { useCronometrosStore, duracaoTotalMin } from '@/lib/cronometrosStore';
-import { useCronometroSessao } from '@/lib/cronometroSessaoStore';
+import { useCronometroSessao, presetDaSessao } from '@/lib/cronometroSessaoStore';
 import { useHabitsStore } from '@/lib/habitsStore';
 import { useProjectsStore } from '@/lib/projectsStore';
 import { useRituaisStore } from '@/lib/rituaisStore';
@@ -289,7 +289,7 @@ export default function CronometrosScreen({
   const { sessao, iniciar, parar, avancarFase } = sessaoStore;
   const { tasks, projects, moveTask, definirContador } = projectsStore;
 
-  const presetAtivo = sessao ? presets.find(p => p.id === sessao.presetId) ?? null : null;
+  const presetAtivo = sessao ? presetDaSessao(sessao, presets) ?? null : null;
 
   const prontos = presets.filter(p => p.pronto);
   const customizados = presets.filter(p => !p.pronto);

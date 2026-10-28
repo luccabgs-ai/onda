@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { useCalendarStore } from '@/lib/calendarStore';
 import { useProjectsStore } from '@/lib/projectsStore';
-import { EventType, CalendarEvent } from '@/lib/types';
+import { EventType, CalendarEvent, SessaoFoco } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { Card } from '@/components/ui/Card';
 import { AreaBadge } from '@/components/ui/AreaBadge';
 import EventFormModal from './EventFormModal';
+import DiaView from './DiaView';
 
 type CalStore = ReturnType<typeof useCalendarStore>;
 type ProjStore = ReturnType<typeof useProjectsStore>;
@@ -14,6 +15,10 @@ type ProjStore = ReturnType<typeof useProjectsStore>;
 interface Props {
   calendarStore: CalStore;
   projectsStore: ProjStore;
+  sessoesFoco?: SessaoFoco[];                 // tempo de foco gravado (faixa "feito" da visão Dia)
+  vitoriasTaskIds?: string[];                 // vitórias de hoje — sugestões pra encaixar
+  sessaoRodando?: boolean;                    // já tem cronômetro rodando
+  onComecarFoco?: (ev: CalendarEvent) => void; // "Começar foco agora" num bloco
 }
 
 const MONTHS_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -46,6 +51,7 @@ const TYPE_LABEL: Record<EventType, string> = {
   evento: 'Evento',
   comemoracao: 'Comemoração',
   lembrete: 'Lembrete',
+  foco: 'Bloco de foco',
 };
 
 interface TaskItem {
@@ -59,7 +65,7 @@ interface TaskItem {
   taskDone: boolean;
 }
 
-export default function CalendarioScreen({ calendarStore, projectsStore }: Props) {
+export default function CalendarioScreen({ calendarStore, projectsStore, sessoesFoco = [], vitoriasTaskIds = [], sessaoRodando = false, onComecarFoco }: Props) {
   const today = new Date();
   const todayStr = toDateStr(today);
 
@@ -69,6 +75,21 @@ export default function CalendarioScreen({ calendarStore, projectsStore }: Props
   const [filterArea, setFilterArea] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [modo, setModo] = useState<'mes' | 'dia'>('mes');
+
+  // Visão Dia anda de dia em dia — e mantém o mês do calendário acompanhando.
+  const diaAberto = selectedDate ?? todayStr;
+  const irParaDia = (dateStr: string) => {
+    const d = new Date(dateStr + 'T12:00:00');
+    setSelectedDate(dateStr);
+    setCurrentYear(d.getFullYear());
+    setCurrentMonth(d.getMonth());
+  };
+  const andarDia = (delta: number) => {
+    const d = new Date(diaAberto + 'T12:00:00');
+    d.setDate(d.getDate() + delta);
+    irParaDia(toDateStr(d));
+  };
 
   const prevMonth = () => {
     if (currentMonth === 0) {
@@ -116,7 +137,13 @@ export default function CalendarioScreen({ calendarStore, projectsStore }: Props
   const filteredTaskEvents = taskEvents.filter(t => !filterArea || t.areaId === filterArea);
 
   const allFilteredItems = [
-    ...filteredCalEvents.map(e => ({ ...e, isTask: false, taskDone: false })),
+    ...filteredCalEvents.map(e => ({
+      ...e,
+      // Bloco de foco leva a cor do projeto da tarefa.
+      color: e.type === 'foco' ? projectsStore.projects.find(p => p.id === e.projectId)?.color ?? 'var(--char-mute)' : e.color,
+      isTask: false,
+      taskDone: false,
+    })),
     ...filteredTaskEvents,
   ];
 
@@ -197,6 +224,23 @@ export default function CalendarioScreen({ calendarStore, projectsStore }: Props
             <span className="jp" style={{ fontSize: 28, color: 'var(--char-mute)', fontWeight: 400, opacity: 0.65 }}>暦</span>
           </h1>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* Mês | Dia */}
+        <div style={{ display: 'inline-flex', border: '1px solid var(--card-border)', borderRadius: 16, overflow: 'hidden' }}>
+          {(['mes', 'dia'] as const).map(m => (
+            <button
+              key={m}
+              onClick={() => setModo(m)}
+              style={{
+                padding: '6px 14px', fontSize: 12.5, fontWeight: 500,
+                background: modo === m ? 'var(--ink)' : 'var(--card-bg)',
+                color: modo === m ? 'var(--washi)' : 'var(--char-soft)',
+              }}
+            >
+              {m === 'mes' ? 'Mês' : 'Dia'}
+            </button>
+          ))}
+        </div>
         <button
           onClick={() => { setEditingEvent(null); setShowModal(true); }}
           style={{
@@ -213,6 +257,7 @@ export default function CalendarioScreen({ calendarStore, projectsStore }: Props
         >
           + Evento
         </button>
+        </div>
       </div>
 
       {/* Filter chips */}
@@ -267,6 +312,7 @@ export default function CalendarioScreen({ calendarStore, projectsStore }: Props
         })}
       </div>
 
+      {modo === 'mes' ? (<>
       {/* Month navigation */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -460,7 +506,7 @@ export default function CalendarioScreen({ calendarStore, projectsStore }: Props
                       }}
                       title={item.title}
                     >
-                      {item.isTask ? '✓ ' : ''}{item.title}
+                      {item.isTask ? '✓ ' : item.type === 'foco' ? '◷ ' : ''}{item.title}
                     </div>
                   ))}
                   {extra > 0 && (
@@ -628,6 +674,52 @@ export default function CalendarioScreen({ calendarStore, projectsStore }: Props
           </div>
         </div>
       )}
+
+      </>) : (<>
+      {/* Visão Dia: navegação de dia em dia + linha do tempo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+        {[-1, 1].map(delta => (
+          <button
+            key={delta}
+            onClick={() => andarDia(delta)}
+            aria-label={delta < 0 ? 'dia anterior' : 'próximo dia'}
+            style={{
+              width: 32, height: 32, borderRadius: '50%', fontSize: 18, color: 'var(--char-soft)',
+              border: '1px solid var(--card-border)', background: 'var(--card-bg)', order: delta < 0 ? 0 : 2,
+            }}
+          >
+            {delta < 0 ? '‹' : '›'}
+          </button>
+        ))}
+        <div className="serif" style={{ fontSize: 22, color: 'var(--ink)', fontWeight: 500, order: 1 }}>
+          {formatSelectedDate(diaAberto)}
+        </div>
+        {diaAberto !== todayStr && (
+          <button
+            onClick={() => irParaDia(todayStr)}
+            style={{ order: 3, padding: '5px 14px', borderRadius: 4, fontSize: 12, color: 'var(--char-soft)', border: '1px solid var(--card-border)', background: 'var(--card-bg)' }}
+          >
+            Hoje
+          </button>
+        )}
+      </div>
+      <DiaView
+        data={diaAberto}
+        hoje={todayStr}
+        eventos={filteredCalEvents}
+        tasks={projectsStore.tasks}
+        projects={projectsStore.projects}
+        sessoesFoco={sessoesFoco}
+        vitoriasTaskIds={vitoriasTaskIds}
+        sessaoRodando={sessaoRodando}
+        onCriar={calendarStore.createEvent}
+        onAtualizar={calendarStore.updateEvent}
+        onApagar={calendarStore.deleteEvent}
+        onEditarEvento={handleEdit}
+        onComecarFoco={ev => onComecarFoco?.(ev)}
+      />
+
+      </>)}
 
       {/* Modal */}
       {showModal && (

@@ -2,6 +2,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AlvoFoco, CronometroPreset, CronometroSessao } from './types';
 
+/** id de "cronômetro" das sessões avulsas — não existe na lista de cronômetros salvos. */
+export const PRESET_AVULSO = 'avulso';
+
+/**
+ * O cronômetro de uma sessão: o salvo, ou um montado na hora pra sessão avulsa (bloco de foco do
+ * calendário, com a duração do bloco). Use sempre isto em vez de procurar só na lista de salvos.
+ */
+export function presetDaSessao(sessao: CronometroSessao, presets: CronometroPreset[]): CronometroPreset | undefined {
+  if (sessao.avulso) {
+    return { id: PRESET_AVULSO, nome: sessao.avulso.nome, fases: sessao.avulso.fases, criadoEm: '', atualizadoEm: '' };
+  }
+  return presets.find(p => p.id === sessao.presetId);
+}
+
 const STORAGE_KEY = 'onda-cronometro-sessao-v1';
 
 /**
@@ -64,6 +78,22 @@ export function useCronometroSessao() {
     });
   }, []);
 
+  /** Sessão avulsa: um único bloco de foco de `minutos`, sem cronômetro salvo (vem do calendário). */
+  const iniciarAvulso = useCallback((nome: string, minutos: number, alvo?: AlvoFoco) => {
+    const agora = Date.now();
+    setSessao({
+      presetId: PRESET_AVULSO,
+      faseIndex: 0,
+      faseTerminaEm: new Date(agora + minutos * 60 * 1000).toISOString(),
+      pausado: false,
+      sessaoId: crypto.randomUUID(),
+      faseIniciouEm: new Date(agora).toISOString(),
+      taskId: alvo && 'taskId' in alvo ? alvo.taskId : undefined,
+      rotulo: alvo && 'rotulo' in alvo ? alvo.rotulo?.trim() || undefined : undefined,
+      avulso: { nome, fases: [{ tipo: 'foco', minutos }] },
+    });
+  }, []);
+
   /** Avança pra próxima fase do preset. Se a fase atual já era a última, encerra a sessão. */
   const avancarFase = useCallback((preset: CronometroPreset) => {
     setSessao(prev => {
@@ -81,6 +111,7 @@ export function useCronometroSessao() {
         faseIniciouEm: new Date(agora).toISOString(),
         taskId: prev.taskId,
         rotulo: prev.rotulo,
+        avulso: prev.avulso,
       };
     });
   }, []);
@@ -103,5 +134,5 @@ export function useCronometroSessao() {
 
   const parar = useCallback(() => setSessao(null), []);
 
-  return { sessao, loaded, iniciar, pausar, retomar, avancarFase, reiniciarFase, parar };
+  return { sessao, loaded, iniciar, iniciarAvulso, pausar, retomar, avancarFase, reiniciarFase, parar };
 }

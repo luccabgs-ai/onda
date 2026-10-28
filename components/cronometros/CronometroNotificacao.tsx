@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { CronometroPreset } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { useCronometrosStore, duracaoTotalMin } from '@/lib/cronometrosStore';
-import { useCronometroSessao } from '@/lib/cronometroSessaoStore';
+import { useCronometroSessao, presetDaSessao } from '@/lib/cronometroSessaoStore';
 import { useHabitsStore } from '@/lib/habitsStore';
 import { useProjectsStore } from '@/lib/projectsStore';
 import { useFocoStore, formatarMinutos, somaMinutos } from '@/lib/focoStore';
@@ -48,7 +48,7 @@ export default function CronometroNotificacao({ cronometrosStore, sessaoStore, h
 
   useEffect(() => {
     if (!sessao || sessao.pausado) return;
-    const preset = presets.find(p => p.id === sessao.presetId);
+    const preset = presetDaSessao(sessao, presets);
     if (!preset) return;
 
     const tick = () => {
