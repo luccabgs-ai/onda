@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Sidebar from '@/components/Sidebar';
 import HojeScreen from '@/components/hoje/HojeScreen';
 import AreasScreen from '@/components/areas/AreasScreen';
@@ -22,6 +22,7 @@ import { useCronometroSessao } from '@/lib/cronometroSessaoStore';
 import { useObjetivosStore } from '@/lib/objetivosStore';
 import { useRituaisStore } from '@/lib/rituaisStore';
 import { useCiclosStore } from '@/lib/ciclosStore';
+import { useFocoStore, blocosDoDia, somaMinutos } from '@/lib/focoStore';
 import { useFalhasDeGravacao, limparFalhasDeGravacao } from '@/lib/gravacao';
 import { toDateStr } from '@/lib/nutricao';
 import { useTelaPequena } from '@/lib/useTelaPequena';
@@ -43,6 +44,11 @@ export default function Home() {
   const objetivosStore = useObjetivosStore();
   const rituaisStore = useRituaisStore();
   const ciclosStore = useCiclosStore();
+  const focoStore = useFocoStore();
+  // "Focar nesta tarefa" no detalhe da tarefa: leva aos Cronômetros com a tarefa já escolhida.
+  const [tarefaParaFocar, setTarefaParaFocar] = useState<string | null>(null);
+  const focarTarefa = (taskId: string) => { setTarefaParaFocar(taskId); setScreen('cronometros'); };
+  const clearTarefaParaFocar = useCallback(() => setTarefaParaFocar(null), []);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   // Celular: app próprio de 4 abas. O PC continua com a barra lateral e as telas de sempre.
   const telaPequena = useTelaPequena();
@@ -52,7 +58,7 @@ export default function Home() {
   const didCheckIn = !!rituaisStore.registroDe(hojeStr, 'manha');
 
   const erroConexao = store.erro || calendarStore.erro || habitsStore.erro
-    || cronometrosStore.erro || objetivosStore.erro || rituaisStore.erro || ciclosStore.erro;
+    || cronometrosStore.erro || objetivosStore.erro || rituaisStore.erro || ciclosStore.erro || focoStore.erro;
   const falhasGravacao = useFalhasDeGravacao();
 
   useEffect(() => {
@@ -133,6 +139,8 @@ export default function Home() {
         cronometrosStore={cronometrosStore}
         sessaoStore={cronometroSessao}
         habitsStore={habitsStore}
+        projectsStore={store}
+        focoStore={focoStore}
         onAbrirCronometros={() => (telaPequena ? setAbaCelular('foco') : setScreen('cronometros'))}
       />
       <RevisaoHabitosModal habitsStore={habitsStore} />
@@ -173,6 +181,7 @@ export default function Home() {
             onIrParaRitual={() => setScreen('ritual')}
             onIrParaObjetivos={() => setScreen('objetivos')}
             onAbrirProjeto={(project) => { setActiveProject(project); setScreen('projetos'); }}
+            minutosFocoHoje={somaMinutos(blocosDoDia(focoStore.sessoes, hojeStr))}
             hour={hour}
             habitsStore={habitsStore}
             projectsStore={store}
@@ -209,6 +218,8 @@ export default function Home() {
             project={activeProject}
             onBack={() => setActiveProject(null)}
             store={store}
+            sessoesFoco={focoStore.sessoes}
+            onFocarTarefa={focarTarefa}
           />
         )}
         {screen === 'calendario' && (
@@ -219,7 +230,16 @@ export default function Home() {
         )}
         {screen === 'habitos'     && <HabitosScreen store={habitsStore} />}
         {screen === 'cronometros' && (
-          <CronometrosScreen cronometrosStore={cronometrosStore} sessaoStore={cronometroSessao} habitsStore={habitsStore} />
+          <CronometrosScreen
+            cronometrosStore={cronometrosStore}
+            sessaoStore={cronometroSessao}
+            habitsStore={habitsStore}
+            projectsStore={store}
+            rituaisStore={rituaisStore}
+            focoStore={focoStore}
+            tarefaParaFocar={tarefaParaFocar}
+            onTarefaParaFocarUsada={clearTarefaParaFocar}
+          />
         )}
       </main>
       </>)}

@@ -4,6 +4,7 @@ import { Task, Project, TaskStatus, ChecklistItem } from '@/lib/types';
 import { IcClose } from '@/components/ui/icons';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { LinhaProgresso, BotoesContador, formatarValor, lerValor } from './ProgressoTarefa';
+import { formatarMinutos } from '@/lib/focoStore';
 
 const PRIORITY_LABEL: Record<string, string> = { baixa: 'Baixa', media: 'Média', alta: 'Alta' };
 const PRIORITY_COLOR: Record<string, string> = { baixa: 'var(--moss)', media: '#B8860B', alta: 'var(--hanko)' };
@@ -36,6 +37,8 @@ interface TaskDetailModalProps {
   onToggleChecklist: (itemId: string) => void;
   onReorderChecklist: (novaOrdem: ChecklistItem[]) => void;
   onDefinirContador: (valor: number) => void;
+  minutosDeFoco?: number;     // tempo de foco já gravado nesta tarefa
+  onFocar?: () => void;       // abre o cronômetro com esta tarefa escolhida
 }
 
 export default function TaskDetailModal({
@@ -48,6 +51,8 @@ export default function TaskDetailModal({
   onToggleChecklist,
   onReorderChecklist,
   onDefinirContador,
+  minutosDeFoco,
+  onFocar,
 }: TaskDetailModalProps) {
   const pastDue = isPastDue(task.dueDate);
   const alvo = task.valorAlvo;
@@ -343,6 +348,13 @@ export default function TaskDetailModal({
           )}
         </div>
 
+        {/* Tempo de foco já gravado nesta tarefa */}
+        {!!minutosDeFoco && minutosDeFoco > 0 && (
+          <div style={{ padding: '10px 24px', borderTop: '1px solid rgba(27,54,93,0.08)', fontSize: 12.5, color: 'var(--char-soft)', flexShrink: 0 }}>
+            ◷ <strong style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{formatarMinutos(minutosDeFoco)}</strong> de foco nesta tarefa
+          </div>
+        )}
+
         {/* Footer */}
         <div style={{
           padding: '14px 24px',
@@ -368,6 +380,7 @@ export default function TaskDetailModal({
           >
             Excluir
           </button>
+          <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={onEdit}
             style={{
@@ -383,6 +396,15 @@ export default function TaskDetailModal({
           >
             Editar
           </button>
+          {onFocar && task.status !== 'concluido' && (
+            <button
+              onClick={onFocar}
+              style={{ padding: '8px 18px', fontSize: 13, fontWeight: 500, color: 'var(--washi)', background: 'var(--ink)', borderRadius: 4, cursor: 'pointer' }}
+            >
+              Focar nesta tarefa
+            </button>
+          )}
+          </div>
         </div>
       </div>
     </div>

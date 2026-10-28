@@ -152,6 +152,32 @@ export interface CronometroSessao {
   faseTerminaEm: string;        // ISO — instante em que a fase atual termina, se não estiver pausado
   pausadoRestanteMs?: number;   // quando pausado, quantos ms faltavam na fase atual
   pausado: boolean;
+  sessaoId?: string;            // identifica a sessão — os blocos gravados são `${sessaoId}-${faseIndex}`
+  faseIniciouEm?: string;       // ISO — quando a fase atual começou (vira o "início" do bloco gravado)
+  taskId?: string;              // no que está focando; ausente = foco livre
+  rotulo?: string;              // nome opcional do foco livre ("estudar", "e-mails")
+}
+
+/** No que uma sessão de cronômetro vai focar: uma tarefa ou foco livre (com nome opcional). */
+export type AlvoFoco = { taskId: string } | { rotulo?: string };
+
+/**
+ * Um bloco de foco feito — uma linha por fase de foco (descanso não conta). Tarefa, projeto e
+ * área são copiados na hora: o histórico de tempo sobrevive se a tarefa for apagada depois.
+ */
+export interface SessaoFoco {
+  id: string;            // `${sessaoId}-${faseIndex}` — gravar duas vezes não duplica
+  inicio: string;        // ISO
+  fim: string;           // ISO
+  minutos: number;       // efetivos — pausa não conta
+  taskId?: string;
+  taskTitulo?: string;
+  projectId?: string;
+  areaId?: string;
+  rotulo?: string;       // foco livre
+  presetId?: string;
+  nota?: string;         // "o que avançou?"
+  criadoEm: string;
 }
 
 export type ObjetivoStatus = 'ativo' | 'concluido' | 'arquivado';

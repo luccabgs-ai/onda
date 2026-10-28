@@ -185,3 +185,6 @@ html[data-night="true"] .brush-divider {
   .slot-aba { padding: 8px 14px !important; font-size: 13px !important; }
   .slot-opcao { padding: 11px 10px !important; font-size: 14px !important; }
 }
+
+/* Bloco de foco recém-guardado pisca de leve na lista (Cronômetros › tempo de foco). */
+@keyframes focoNovo { 0% { background: color-mix(in srgb, var(--moss) 22%, transparent); } 100% { background: transparent; } }

@@ -39,7 +39,7 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
 - **O navegador nunca fala com o Supabase.** Só o servidor, via `lib/db.ts` (chave
   `service_role`, RLS desligado). O navegador chama as rotas `app/api/*`.
 - **Um store por domínio** em `lib/*Store.ts` (`projectsStore`, `habitsStore`, `calendarStore`,
-  `cronometrosStore`, `objetivosStore`, `rituaisStore`, `ciclosStore`). Todos são hooks instanciados **uma vez**
+  `cronometrosStore`, `objetivosStore`, `rituaisStore`, `ciclosStore`, `focoStore`). Todos são hooks instanciados **uma vez**
   em `app/page.tsx` e passados por prop — não há contexto global.
 - **Padrão de cada store:** carrega com `useRetryFetch` (retenta com espera e expõe `erro`);
   cada mutação atualiza o estado local na hora e dispara a gravação com `gravar()` de
@@ -88,6 +88,13 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
   rota `PATCH /api/ciclos/[id]` também cria a linha se ela não existir (o cliente manda sempre
   `escala`/`inicio`/`fim`), pra não haver corrida entre criar e atualizar. As quatro escalas
   ainda usam a mesma tela; o que difere entre elas fica em `ESCALAS`.
+- **Tempo de foco** (`lib/foco.ts` + `lib/focoStore.ts`, tabela `sessoes_foco`): cada fase de
+  **foco** do cronômetro vira um bloco gravado (descanso não conta), id `${sessaoId}-${faseIndex}`
+  com upsert. Antes de começar, o PC pergunta "no que você vai focar?" — tarefa ou foco livre
+  (opcional). Quem grava o fim natural é o `CronometroNotificacao` (dono do relógio, roda em
+  qualquer tela); pular fase ou encerrar grava o tempo feito só se passou de
+  `MINIMO_MIN_BLOCO_INTERROMPIDO` (5 min); reiniciar a fase descarta. Título, projeto e área da
+  tarefa são copiados no bloco, pra o histórico sobreviver à tarefa apagada.
 - **Ritual**: no máximo um registro por dia e por tipo (id = `${data}-${tipo}`), gravado com
   upsert. O check-in da manhã é o que acende o selo na barra lateral.
 
@@ -109,6 +116,10 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
   autentica pelo `CRON_SECRET`, olha os rituais de hoje (data em `America/Sao_Paulo`) e não
   manda o lembrete de um momento já feito. Aparelhos inscritos ficam em `push_inscricoes`.
   No iPhone só funciona com o app instalado na tela inicial.
+- **Janela no celular vai pro `<body>`.** No Safari do iPhone, um modal `position: fixed` desenhado
+  dentro da área que rola do app de celular é recortado — o rodapé com o botão sumia atrás da
+  barra de abas. Todo modal aberto de dentro de `components/celular/` passa por `<ForaDoApp>`
+  (portal pro body). Campo de texto no celular precisa de 16px, senão o iPhone dá zoom sozinho.
 - **`proxy.ts`** bloqueia tudo que não está no `matcher`. Ao adicionar asset público novo (tipo
   `icon.svg`), inclua lá, senão nem o navegador nem o Google conseguem buscar.
 - O Supabase já devolveu `JWT issued at future` de forma passageira. Se aparecer, tente de novo

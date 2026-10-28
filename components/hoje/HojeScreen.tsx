@@ -7,6 +7,7 @@ import { useProjectsStore } from '@/lib/projectsStore';
 import { useObjetivosStore } from '@/lib/objetivosStore';
 import { useCalendarStore } from '@/lib/calendarStore';
 import { useRituaisStore } from '@/lib/rituaisStore';
+import { formatarMinutos } from '@/lib/focoStore';
 import { computeNutridoMap, ordenarHabitosDoDia, votouHoje, estaAgendadoEm, toDateStr, LIMIAR_AREA_NEGLIGENCIADA } from '@/lib/nutricao';
 import { computePrioridadesDoDia, PrioridadeItem } from '@/lib/prioridades';
 import { montarAreasVista } from '@/lib/areasStats';
@@ -34,6 +35,7 @@ interface HojeScreenProps {
   onIrParaRitual: () => void;
   onIrParaObjetivos: () => void;
   onAbrirProjeto: (project: Project) => void;
+  minutosFocoHoje?: number;   // tempo de foco gravado hoje pelo cronômetro
 }
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -249,7 +251,7 @@ const StreakSummaryInline = ({ habitos }: StreakCardProps) => {
   );
 };
 
-export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsStore, objetivosStore, calendarStore, rituaisStore, onIrParaRitual, onIrParaObjetivos, onAbrirProjeto }: HojeScreenProps) {
+export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsStore, objetivosStore, calendarStore, rituaisStore, onIrParaRitual, onIrParaObjetivos, onAbrirProjeto, minutosFocoHoje = 0 }: HojeScreenProps) {
   const [hoveredHabitoId, setHoveredHabitoId] = useState<string | null>(null);
   const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
   const [editingSlotDraft, setEditingSlotDraft] = useState<PrioridadeRitual | null>(null);
@@ -356,6 +358,11 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
           marginBottom: 8,
         }}>
           {dataExtensa}
+          {minutosFocoHoje > 0 && (
+            <span style={{ textTransform: 'none', letterSpacing: '0.02em', fontWeight: 500, color: 'var(--char-soft)', marginLeft: 12 }}>
+              ◷ foco hoje: <strong style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{formatarMinutos(minutosFocoHoje)}</strong>
+            </span>
+          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 20 }}>
