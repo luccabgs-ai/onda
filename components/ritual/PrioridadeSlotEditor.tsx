@@ -54,6 +54,7 @@ export default function PrioridadeSlotEditor({
         {TABS.map(t => (
           <button
             key={t.id}
+            className="slot-aba"
             onClick={() => setTab(t.id)}
             style={{
               padding: '4px 11px',
@@ -89,7 +90,7 @@ export default function PrioridadeSlotEditor({
             <p style={{ fontSize: 12, color: 'var(--char-mute)', fontStyle: 'italic', margin: '4px 2px' }}>nenhum evento hoje</p>
           )}
           {eventosHoje.map(e => (
-            <button key={e.id} onClick={() => onChange({ origem: 'evento', eventoId: e.id })} style={pickerButtonStyle(value.eventoId === e.id)}>
+            <button key={e.id} onClick={() => onChange({ origem: 'evento', eventoId: e.id })} className="slot-opcao" style={pickerButtonStyle(value.eventoId === e.id)}>
               {e.time ? `${e.time} · ` : ''}{e.title}
             </button>
           ))}
@@ -102,7 +103,7 @@ export default function PrioridadeSlotEditor({
             <p style={{ fontSize: 12, color: 'var(--char-mute)', fontStyle: 'italic', margin: '4px 2px' }}>nenhuma tarefa aberta</p>
           )}
           {tasksAbertas.map(t => (
-            <button key={t.id} onClick={() => onChange({ origem: 'task', taskId: t.id })} style={pickerButtonStyle(value.taskId === t.id)}>
+            <button key={t.id} onClick={() => onChange({ origem: 'task', taskId: t.id })} className="slot-opcao" style={pickerButtonStyle(value.taskId === t.id)}>
               {t.title}
               <span style={{ color: 'var(--char-mute)', fontSize: 11 }}> · {nomeDoProjeto(t.projectId)}</span>
             </button>
@@ -116,7 +117,7 @@ export default function PrioridadeSlotEditor({
             <p style={{ fontSize: 12, color: 'var(--char-mute)', fontStyle: 'italic', margin: '4px 2px' }}>nenhum hábito agendado hoje</p>
           )}
           {habitosHoje.map(h => (
-            <button key={h.id} onClick={() => onChange({ origem: 'habito', habitoId: h.id })} style={pickerButtonStyle(value.habitoId === h.id)}>
+            <button key={h.id} onClick={() => onChange({ origem: 'habito', habitoId: h.id })} className="slot-opcao" style={pickerButtonStyle(value.habitoId === h.id)}>
               {h.acao}
             </button>
           ))}

@@ -149,3 +149,38 @@ html[data-night="true"] .brush-divider {
   html, body { touch-action: pan-x pan-y; }
   input, textarea, select { font-size: 16px !important; }
 }
+
+/* Classe utilitária: só aparece no celular. */
+.so-celular { display: none; }
+
+/* ── Celular: ritual em tela cheia, com o botão sempre acima do teclado ───────
+   O RitualForm foi feito pro PC (janela centralizada). No celular vira uma folha que
+   ocupa a parte visível da tela; --vv-altura/--vv-topo vêm do próprio formulário e
+   acompanham o teclado do iPhone. Os !important vencem os estilos inline do PC. */
+@media (max-width: 768px) {
+  .so-celular { display: block; }
+
+  .ritual-folha {
+    inset: auto !important;
+    top: var(--vv-topo, 0px) !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: var(--vv-altura, 100dvh) !important;
+    padding: 0 !important;
+    align-items: stretch !important;
+  }
+  .ritual-cartao {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+  .ritual-cabeca { padding: calc(env(safe-area-inset-top) + 12px) 18px 12px !important; }
+  .ritual-corpo { padding: 20px 18px 8px !important; min-height: 0 !important; }
+  .ritual-rodape { padding: 10px 18px calc(env(safe-area-inset-bottom) + 10px) !important; }
+  .ritual-avancar { min-height: 46px; padding: 12px 22px !important; font-size: 14.5px !important; border-radius: 10px !important; }
+
+  .slot-aba { padding: 8px 14px !important; font-size: 13px !important; }
+  .slot-opcao { padding: 11px 10px !important; font-size: 14px !important; }
+}

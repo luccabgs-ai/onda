@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CalendarEvent, Habito, PrioridadeRitual, Project, Task } from '@/lib/types';
 import { IcSun, IcMoon, IcClose, IcArrowR, IcCheck } from '@/components/ui/icons';
 import { EnergyScale } from '@/components/hoje/EnergyScale';
@@ -72,6 +72,24 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
   const [text2, setText2] = useState('');
   const [vit, setVit] = useState<PrioridadeRitual[]>([SLOT_VAZIO, SLOT_VAZIO, SLOT_VAZIO]);
   const [done, setDone] = useState(false);
+  const folhaRef = useRef<HTMLDivElement>(null);
+
+  // No celular o formulário ocupa a tela, e o teclado do iPhone é desenhado por cima dela —
+  // escondia o botão do rodapé. Aqui a folha passa a medir só a parte visível acima do
+  // teclado (o CSS de celular usa essas variáveis; no PC elas não têm efeito).
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const folha = folhaRef.current;
+    if (!vv || !folha) return;
+    const ajustar = () => {
+      folha.style.setProperty('--vv-altura', `${vv.height}px`);
+      folha.style.setProperty('--vv-topo', `${vv.offsetTop}px`);
+    };
+    ajustar();
+    vv.addEventListener('resize', ajustar);
+    vv.addEventListener('scroll', ajustar);
+    return () => { vv.removeEventListener('resize', ajustar); vv.removeEventListener('scroll', ajustar); };
+  }, []);
 
   const cfg = morning
     ? {
@@ -117,7 +135,7 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
   };
 
   return (
-    <div style={{
+    <div ref={folhaRef} className="ritual-folha" style={{
       position: 'fixed', inset: 0,
       background: 'rgba(20,38,74,0.55)',
       backdropFilter: 'blur(4px)',
@@ -125,7 +143,7 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 32,
     }}>
-      <div style={{
+      <div className="ritual-cartao" style={{
         background: 'var(--washi)',
         border: '1px solid rgba(27,54,93,0.18)',
         borderRadius: 8,
@@ -138,7 +156,7 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
         overflow: 'hidden',
       }}>
         {/* Header */}
-        <div style={{
+        <div className="ritual-cabeca" style={{
           padding: '22px 28px',
           borderBottom: '1px solid rgba(27,54,93,0.08)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -189,7 +207,7 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
 
         {/* Step body */}
         {!done && (
-          <div key={step} style={{ padding: '28px 32px 8px', minHeight: 280, flex: 1, overflowY: 'auto' }}>
+          <div key={step} className="ritual-corpo" style={{ padding: '28px 32px 8px', minHeight: 280, flex: 1, overflowY: 'auto' }}>
             <div style={{
               fontSize: 11, color: 'var(--char-mute)',
               letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8,
@@ -250,6 +268,11 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
                     />
                   </div>
                 ))}
+                {!canAdvance() && (
+                  <p className="so-celular" style={{ fontSize: 12.5, color: 'var(--char-mute)', margin: '2px 2px 8px' }}>
+                    Preencha as três pra liberar o botão “começar o dia”.
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -279,7 +302,7 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
 
         {/* Footer */}
         {!done && (
-          <div style={{
+          <div className="ritual-rodape" style={{
             padding: '16px 28px',
             borderTop: '1px solid rgba(27,54,93,0.08)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -292,6 +315,7 @@ export default function RitualForm({ kind, onClose, onSubmit, hoje, eventos, tas
               {step === 0 ? 'cancelar' : '← voltar'}
             </button>
             <button
+              className="ritual-avancar"
               disabled={!canAdvance()}
               onClick={next}
               style={{
