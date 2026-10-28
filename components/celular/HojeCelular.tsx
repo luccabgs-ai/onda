@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Hanko } from '@/components/ui/Hanko';
 import RitualForm, { RitualRespostas } from '@/components/ritual/RitualForm';
 import { tinta } from '@/components/organizacao/estilo';
-import { cartao, kicker, botaoCheio, Cabecalho, Secao, Vazio } from './ui';
+import { cartao, kicker, botaoCheio, Cabecalho, Secao, Vazio, ForaDoApp } from './ui';
 import Lembretes from './Lembretes';
 
 interface Props {
@@ -227,6 +227,7 @@ export default function HojeCelular({ hour, habitsStore, projectsStore, calendar
       <Lembretes />
 
       {ritual && (
+        <ForaDoApp>
         <RitualForm
           kind={ritual}
           onClose={() => setRitual(null)}
@@ -237,6 +238,7 @@ export default function HojeCelular({ hour, habitsStore, projectsStore, calendar
           projects={projects}
           habitos={habitos}
         />
+        </ForaDoApp>
       )}
     </div>
   );

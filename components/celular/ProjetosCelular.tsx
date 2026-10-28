@@ -8,7 +8,7 @@ import TaskDetailModal from '@/components/projetos/TaskDetailModal';
 import TaskFormModal from '@/components/projetos/TaskFormModal';
 import { LinhaProgresso } from '@/components/projetos/ProgressoTarefa';
 import { tinta } from '@/components/organizacao/estilo';
-import { cartao, botaoContorno, Cabecalho, Vazio, NotaPc } from './ui';
+import { cartao, botaoContorno, Cabecalho, Vazio, NotaPc, ForaDoApp } from './ui';
 
 type Store = ReturnType<typeof useProjectsStore>;
 type DadosTarefa = Omit<Task, 'id' | 'projectId' | 'order' | 'createdAt' | 'updatedAt'>;
@@ -159,6 +159,7 @@ function Projeto({ projeto, store, hoje, onVoltar }: { projeto: Project; store: 
         <button onClick={() => setCriando(true)} style={{ ...botaoContorno, marginTop: 4, alignSelf: 'flex-start' }}>+ nova tarefa</button>
       </div>
 
+      <ForaDoApp>
       {detalhe && !editando && (
         <TaskDetailModal
           task={detalhe}
@@ -183,6 +184,7 @@ function Projeto({ projeto, store, hoje, onVoltar }: { projeto: Project; store: 
           onSave={data => { store.createTask(projeto.id, data); setCriando(false); setEtapa(data.status); }}
         />
       )}
+      </ForaDoApp>
     </div>
   );
 }

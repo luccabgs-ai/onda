@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { tinta } from '@/components/organizacao/estilo';
 
 /** Peças visuais do app de celular — toque grande, texto legível, nada que dependa de hover. */
@@ -74,4 +75,13 @@ export function Vazio({ children }: { children: React.ReactNode }) {
 /** Nota no rodapé de uma aba — o que ainda mora só no computador. */
 export function NotaPc({ children }: { children: React.ReactNode }) {
   return <p style={{ fontSize: 11.5, color: 'var(--char-mute)', margin: '22px 2px 0', lineHeight: 1.5 }}>{children}</p>;
+}
+
+/**
+ * Desenha uma janela (ritual, tarefa) direto no <body>, fora da área que rola do app. No
+ * Safari do iPhone, uma janela fixa desenhada dentro de um container com rolagem pode ser
+ * recortada nas bordas dele — o rodapé com o botão sumia atrás da barra de abas.
+ */
+export function ForaDoApp({ children }: { children: React.ReactNode }) {
+  return createPortal(children, document.body);
 }
