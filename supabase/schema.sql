@@ -133,3 +133,20 @@ create table ciclos (
   criado_em text not null,
   atualizado_em text not null
 );
+
+-- Tempo de foco: uma linha por bloco de foco do cronômetro (descanso não conta).
+-- id = `${sessaoId}-${faseIndex}`, gravado com upsert. Título/projeto/área copiados na hora.
+create table sessoes_foco (
+  id text primary key,
+  inicio text not null,
+  fim text not null,
+  minutos double precision not null,
+  task_id text,
+  task_titulo text,
+  project_id text,
+  area_id text,
+  rotulo text,
+  preset_id text,
+  nota text,
+  criado_em text not null
+);

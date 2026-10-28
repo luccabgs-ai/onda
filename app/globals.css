@@ -140,3 +140,6 @@ html[data-night="true"] .brush-divider {
 @keyframes ripple { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.4); opacity: 0; } }
 @keyframes drift  { 0% { transform: translateY(0); } 50% { transform: translateY(-3px); } 100% { transform: translateY(0); } }
 @keyframes pulse  { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+/* Bloco de foco recém-guardado pisca de leve na lista (Cronômetros › tempo de foco). */
+@keyframes focoNovo { 0% { background: color-mix(in srgb, var(--moss) 22%, transparent); } 100% { background: transparent; } }

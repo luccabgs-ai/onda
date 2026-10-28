@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { CronometroPreset, CronometroSessao } from './types';
+import { AlvoFoco, CronometroPreset, CronometroSessao } from './types';
 
 const STORAGE_KEY = 'onda-cronometro-sessao-v1';
 
@@ -27,13 +27,19 @@ export function useCronometroSessao() {
     else localStorage.removeItem(STORAGE_KEY);
   }, [sessao, loaded]);
 
-  const iniciar = useCallback((preset: CronometroPreset) => {
+  /** Começa uma sessão. `alvo` diz no que vai focar — tarefa ou foco livre (sem alvo = foco livre). */
+  const iniciar = useCallback((preset: CronometroPreset, alvo?: AlvoFoco) => {
     const durMs = preset.fases[0].minutos * 60 * 1000;
+    const agora = Date.now();
     setSessao({
       presetId: preset.id,
       faseIndex: 0,
-      faseTerminaEm: new Date(Date.now() + durMs).toISOString(),
+      faseTerminaEm: new Date(agora + durMs).toISOString(),
       pausado: false,
+      sessaoId: crypto.randomUUID(),
+      faseIniciouEm: new Date(agora).toISOString(),
+      taskId: alvo && 'taskId' in alvo ? alvo.taskId : undefined,
+      rotulo: alvo && 'rotulo' in alvo ? alvo.rotulo?.trim() || undefined : undefined,
     });
   }, []);
 
@@ -65,11 +71,16 @@ export function useCronometroSessao() {
       const proximoIndex = prev.faseIndex + 1;
       if (proximoIndex >= preset.fases.length) return null;
       const durMs = preset.fases[proximoIndex].minutos * 60 * 1000;
+      const agora = Date.now();
       return {
         presetId: prev.presetId,
         faseIndex: proximoIndex,
-        faseTerminaEm: new Date(Date.now() + durMs).toISOString(),
+        faseTerminaEm: new Date(agora + durMs).toISOString(),
         pausado: false,
+        sessaoId: prev.sessaoId,
+        faseIniciouEm: new Date(agora).toISOString(),
+        taskId: prev.taskId,
+        rotulo: prev.rotulo,
       };
     });
   }, []);
@@ -78,7 +89,15 @@ export function useCronometroSessao() {
     setSessao(prev => {
       if (!prev) return prev;
       const durMs = preset.fases[prev.faseIndex].minutos * 60 * 1000;
-      return { ...prev, faseTerminaEm: new Date(Date.now() + durMs).toISOString(), pausado: false, pausadoRestanteMs: undefined };
+      const agora = Date.now();
+      // Recomeçar a fase descarta o tempo feito nela — o bloco gravado conta a partir de agora.
+      return {
+        ...prev,
+        faseTerminaEm: new Date(agora + durMs).toISOString(),
+        faseIniciouEm: new Date(agora).toISOString(),
+        pausado: false,
+        pausadoRestanteMs: undefined,
+      };
     });
   }, []);
 

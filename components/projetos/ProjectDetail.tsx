@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from 'react';
-import { Project, Task, TaskStatus } from '@/lib/types';
+import { Project, SessaoFoco, Task, TaskStatus } from '@/lib/types';
 import { useProjectsStore } from '@/lib/projectsStore';
 import { Card } from '@/components/ui/Card';
 import { AreaBadge } from '@/components/ui/AreaBadge';
@@ -8,6 +8,7 @@ import ProjectFormModal from './ProjectFormModal';
 import TaskFormModal from './TaskFormModal';
 import TaskDetailModal from './TaskDetailModal';
 import { LinhaProgresso, BotoesContador, formatarValor } from './ProgressoTarefa';
+import { blocosDaSemana, formatarMinutos, somaMinutos } from '@/lib/focoStore';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -417,9 +418,11 @@ interface ProjectDetailProps {
   project: Project;
   onBack: () => void;
   store: ReturnType<typeof useProjectsStore>;
+  sessoesFoco?: SessaoFoco[];               // tempo de foco gravado (todas as sessões)
+  onFocarTarefa?: (taskId: string) => void; // "Focar nesta tarefa" → cronômetro
 }
 
-export default function ProjectDetail({ project: initialProject, onBack, store }: ProjectDetailProps) {
+export default function ProjectDetail({ project: initialProject, onBack, store, sessoesFoco = [], onFocarTarefa }: ProjectDetailProps) {
   const [showEditProject, setShowEditProject] = useState(false);
   const [addTaskCol, setAddTaskCol] = useState<TaskStatus | null>(null);
   const [editTask, setEditTask] = useState<Task | null>(null);
@@ -502,6 +505,10 @@ export default function ProjectDetail({ project: initialProject, onBack, store }
     setDetailTask(prev => prev?.id === taskId ? { ...prev, checklist: novaOrdem } : prev);
   };
 
+  const focoDoProjeto = sessoesFoco.filter(s => s.projectId === project.id);
+  const focoTotal = somaMinutos(focoDoProjeto);
+  const focoSemana = somaMinutos(blocosDaSemana(focoDoProjeto, toDateStr(new Date())));
+
   const done = allTasks.filter(t => t.status === 'concluido').length;
   const progress = allTasks.length > 0 ? done / allTasks.length : 0;
 
@@ -554,6 +561,14 @@ export default function ProjectDetail({ project: initialProject, onBack, store }
             </p>
           )}
         </div>
+
+        {/* Tempo de foco no projeto */}
+        {focoTotal > 0 && (
+          <span title="tempo de foco gravado pelo cronômetro" style={{ fontSize: 12, color: 'var(--char-soft)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+            ◷ foco: <strong style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{formatarMinutos(focoSemana)}</strong> na semana
+            {' · '}<strong style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{formatarMinutos(focoTotal)}</strong> no total
+          </span>
+        )}
 
         {/* Progress mini */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
@@ -716,6 +731,8 @@ export default function ProjectDetail({ project: initialProject, onBack, store }
           onToggleChecklist={itemId => handleToggleChecklist(detailTask.id, itemId)}
           onReorderChecklist={novaOrdem => handleReorderChecklist(detailTask.id, novaOrdem)}
           onDefinirContador={valor => store.definirContador(detailTask.id, valor)}
+          minutosDeFoco={somaMinutos(focoDoProjeto.filter(s => s.taskId === detailTask.id))}
+          onFocar={onFocarTarefa && (() => { setDetailTask(null); onFocarTarefa(detailTask.id); })}
         />
       )}
 
