@@ -85,3 +85,73 @@ export function NotaPc({ children }: { children: React.ReactNode }) {
 export function ForaDoApp({ children }: { children: React.ReactNode }) {
   return createPortal(children, document.body);
 }
+
+/**
+ * Folha que sobe do rodapé (escolher vitória, criar bloco…). Vai pro <body> via ForaDoApp.
+ * Campos de texto ficam no topo da folha: o teclado do iPhone cobre a parte de baixo.
+ */
+export function Folha({ titulo, sobre, onFechar, children }: {
+  titulo: string;
+  sobre?: string;
+  onFechar: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <ForaDoApp>
+      <div
+        onClick={onFechar}
+        style={{ position: 'fixed', inset: 0, zIndex: 1400, background: 'rgba(20,38,74,0.45)', display: 'flex', alignItems: 'flex-end' }}
+      >
+        <div
+          role="dialog"
+          aria-label={titulo}
+          onClick={e => e.stopPropagation()}
+          style={{
+            width: '100%', maxHeight: '86dvh', overflowY: 'auto', background: 'var(--washi)', borderRadius: '18px 18px 0 0',
+            padding: '10px max(18px, env(safe-area-inset-left)) calc(env(safe-area-inset-bottom) + 22px)',
+          }}
+        >
+          <div style={{ width: 38, height: 4, borderRadius: 2, background: tinta(20), margin: '0 auto 12px' }} />
+          {sobre && <div style={kicker}>{sobre}</div>}
+          <h3 className="serif" style={{ fontSize: 22, color: 'var(--ink)', margin: '2px 0 10px', fontWeight: 500 }}>{titulo}</h3>
+          {children}
+        </div>
+      </div>
+    </ForaDoApp>
+  );
+}
+
+/** Linha tocável dentro de uma folha (tarefa, bloco, hábito…). */
+export function OpcaoFolha({ cor, texto, detalhe, ativo = false, onClick }: {
+  cor?: string;
+  texto: string;
+  detalhe?: string;
+  ativo?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button onClick={onClick} style={{
+      display: 'flex', alignItems: 'center', gap: 10, width: '100%', minHeight: 46, padding: '10px 12px', borderRadius: 10, textAlign: 'left',
+      border: '1px solid var(--card-border)', background: 'var(--card-bg)', fontSize: 14, color: 'var(--char)',
+      boxShadow: ativo ? 'inset 0 0 0 1.5px var(--ink)' : 'none',
+    }}>
+      <span style={{ width: 8, height: 8, borderRadius: 2, background: cor ?? 'var(--char-mute)', flexShrink: 0 }} />
+      <span style={{ flex: 1, minWidth: 0 }}>{texto}</span>
+      {detalhe && <span style={{ fontSize: 11, color: 'var(--char-mute)', whiteSpace: 'nowrap', flexShrink: 0 }}>{detalhe}</span>}
+    </button>
+  );
+}
+
+export function Energia({ valor, onEscolher }: { valor: number | null; onEscolher: (n: number) => void }) {
+  return (
+    <div style={{ display: 'flex', gap: 8 }}>
+      {[1, 2, 3, 4, 5].map(n => (
+        <button key={n} onClick={() => onEscolher(n)} style={{
+          flex: 1, height: 44, borderRadius: 10, fontSize: 15, fontWeight: 600,
+          border: `1.5px solid ${valor === n ? 'var(--ink)' : tinta(18)}`,
+          background: valor === n ? 'var(--ink)' : 'transparent', color: valor === n ? 'var(--washi)' : 'var(--char-soft)',
+        }}>{n}</button>
+      ))}
+    </div>
+  );
+}

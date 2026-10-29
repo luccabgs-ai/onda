@@ -166,6 +166,7 @@ export default function Home() {
           objetivosStore={objetivosStore}
           rituaisStore={rituaisStore}
           ciclosStore={ciclosStore}
+          focoStore={focoStore}
         />
       ) : (<>
       <Sidebar

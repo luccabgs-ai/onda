@@ -8,15 +8,20 @@ import { useCronometroSessao, presetDaSessao } from '@/lib/cronometroSessaoStore
 import { useObjetivosStore } from '@/lib/objetivosStore';
 import { useRituaisStore } from '@/lib/rituaisStore';
 import { useCiclosStore } from '@/lib/ciclosStore';
+import { useFocoStore } from '@/lib/focoStore';
+import { CalendarEvent } from '@/lib/types';
+import { paraMin } from '@/lib/agenda';
 import HojeCelular from './HojeCelular';
 import FocoCelular from './FocoCelular';
 import ProjetosCelular from './ProjetosCelular';
 import RumoCelular from './RumoCelular';
+import AgendaCelular from './AgendaCelular';
 
-export type AbaCelular = 'hoje' | 'foco' | 'projetos' | 'rumo';
+export type AbaCelular = 'hoje' | 'agenda' | 'foco' | 'projetos' | 'rumo';
 
 const ABAS: { id: AbaCelular; rotulo: string; kanji: string }[] = [
   { id: 'hoje', rotulo: 'Hoje', kanji: '今' },
+  { id: 'agenda', rotulo: 'Agenda', kanji: '暦' },
   { id: 'foco', rotulo: 'Foco', kanji: '集' },
   { id: 'projetos', rotulo: 'Projetos', kanji: '企' },
   { id: 'rumo', rotulo: 'Rumo', kanji: '道' },
@@ -34,6 +39,7 @@ interface Props {
   objetivosStore: ReturnType<typeof useObjetivosStore>;
   rituaisStore: ReturnType<typeof useRituaisStore>;
   ciclosStore: ReturnType<typeof useCiclosStore>;
+  focoStore: ReturnType<typeof useFocoStore>;
 }
 
 /** Faixa fina acima da barra de abas enquanto um cronômetro roda — um toque volta pro Foco. */
@@ -89,6 +95,14 @@ export default function AppCelular(props: Props) {
     return () => document.removeEventListener('gesturestart', bloquear);
   }, []);
 
+  // Bloco de foco da agenda: cronômetro avulso com a duração exata do bloco, já na tarefa.
+  const comecarBloco = (ev: CalendarEvent) => {
+    if (!ev.time || props.sessaoStore.sessao) return;
+    const minutos = ev.endTime ? Math.max(5, paraMin(ev.endTime) - paraMin(ev.time)) : 60;
+    props.sessaoStore.iniciarAvulso(ev.title, minutos, ev.taskId ? { taskId: ev.taskId } : { rotulo: ev.title });
+    trocar('foco');
+  };
+
   // Trocar de aba volta pro topo — cada aba tem a própria rolagem.
   const [rolagem, setRolagem] = useState<HTMLElement | null>(null);
   const trocar = (nova: AbaCelular) => {
@@ -110,15 +124,31 @@ export default function AppCelular(props: Props) {
       >
         {aba === 'hoje' && (
           <HojeCelular
-            hour={hour}
             habitsStore={props.habitsStore}
             projectsStore={props.projectsStore}
             calendarStore={props.calendarStore}
             rituaisStore={props.rituaisStore}
+            focoStore={props.focoStore}
+            onComecarBloco={comecarBloco}
+          />
+        )}
+        {aba === 'agenda' && (
+          <AgendaCelular
+            calendarStore={props.calendarStore}
+            projectsStore={props.projectsStore}
+            focoStore={props.focoStore}
+            sessaoRodando={!!props.sessaoStore.sessao}
+            onComecarBloco={comecarBloco}
           />
         )}
         {aba === 'foco' && (
-          <FocoCelular cronometrosStore={props.cronometrosStore} sessaoStore={props.sessaoStore} habitsStore={props.habitsStore} />
+          <FocoCelular
+            cronometrosStore={props.cronometrosStore}
+            sessaoStore={props.sessaoStore}
+            habitsStore={props.habitsStore}
+            projectsStore={props.projectsStore}
+            focoStore={props.focoStore}
+          />
         )}
         {aba === 'projetos' && <ProjetosCelular store={props.projectsStore} />}
         {aba === 'rumo' && (
@@ -133,7 +163,7 @@ export default function AppCelular(props: Props) {
       <nav
         aria-label="abas"
         style={{
-          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', flexShrink: 0,
+          display: 'grid', gridTemplateColumns: `repeat(${ABAS.length}, 1fr)`, flexShrink: 0,
           paddingTop: 6, paddingBottom: 'calc(env(safe-area-inset-bottom) + 6px)',
           paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)',
           borderTop: '1px solid var(--card-border)',

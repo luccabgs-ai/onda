@@ -38,7 +38,7 @@ export function computePrioridadesDoDia(params: {
       if (h) itemsSlots.push({ kind: 'habito', id: `slot-${slotIndex}`, text: h.acao, areaId: h.areaId, done: votouHoje(h, hoje), habitoId: h.id, slotIndex });
     } else if (v.origem === 'evento' && v.eventoId) {
       const e = events.find(x => x.id === v.eventoId);
-      if (e) itemsSlots.push({ kind: 'evento', id: `slot-${slotIndex}`, text: e.title, areaId: e.areaId, done: false, eventId: e.id, time: e.time, slotIndex });
+      if (e) itemsSlots.push({ kind: 'evento', id: `slot-${slotIndex}`, text: e.title, areaId: e.areaId, done: !!v.done, eventId: e.id, time: e.time, slotIndex });
     }
   });
 

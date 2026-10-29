@@ -40,6 +40,7 @@ export function useRituaisStore() {
     vitorias?: PrioridadeRitual[];
     funcionou?: string;
     carrega?: string;
+    levar?: PrioridadeRitual[];
   }) => {
     const id = `${dados.data}-${dados.tipo}`;
     const existente = registros.find(r => r.id === id);
@@ -52,6 +53,7 @@ export function useRituaisStore() {
       vitorias: dados.vitorias,
       funcionou: dados.funcionou,
       carrega: dados.carrega,
+      levar: dados.levar,
       criadoEm: existente?.criadoEm ?? now(),
       atualizadoEm: now(),
     };

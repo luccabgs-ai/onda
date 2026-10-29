@@ -275,7 +275,7 @@ export default function RitualScreen({ habitsStore, rituaisStore, projectsStore,
     if (!dia && dias.length >= 7) continue;
     if (!dia) { dia = { data: r.data }; dias.push(dia); }
     if (r.tipo === 'manha') dia.manha = r;
-    else dia.noite = r;
+    else if (r.tipo === 'noite') dia.noite = r;
   }
 
   const habitosManha = habitsStore.habitos.filter(h => h.ancoraTipo === 'ritual_manha');

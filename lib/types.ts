@@ -57,7 +57,8 @@ export interface Habito {
   atualizadoEm: string;
 }
 
-export type RitualTipo = 'manha' | 'noite';
+/** manhã abre o dia, meio é o ponto do meio-dia (só a energia), noite fecha. */
+export type RitualTipo = 'manha' | 'meio' | 'noite';
 
 export interface RitualRegistro {
   id: string;          // `${data}-${tipo}` — no máximo um registro por dia/tipo, upsert idempotente
@@ -67,7 +68,8 @@ export interface RitualRegistro {
   intencao?: string;   // manhã
   vitorias?: PrioridadeRitual[]; // manhã — as 3 prioridades do dia
   funcionou?: string;  // noite
-  carrega?: string;    // noite — o que fica pra amanhã
+  carrega?: string;    // noite — "amanhã eu começo por…" (vira sugestão na manhã seguinte)
+  levar?: PrioridadeRitual[]; // noite — vitórias não feitas que você escolheu levar pra amanhã (viram sugestão)
   criadoEm: string;
   atualizadoEm: string;
 }

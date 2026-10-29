@@ -5,12 +5,13 @@ import { RitualRegistro, PrioridadeRitual } from '@/lib/types';
 interface RitualRow {
   id: string;
   data: string;
-  tipo: 'manha' | 'noite';
+  tipo: 'manha' | 'meio' | 'noite';
   energia: number;
   intencao: string | null;
   vitorias: PrioridadeRitual[] | null;
   funcionou: string | null;
   carrega: string | null;
+  levar: PrioridadeRitual[] | null;
   criado_em: string;
   atualizado_em: string;
 }
@@ -25,6 +26,7 @@ function rowToRegistro(row: RitualRow): RitualRegistro {
     vitorias: row.vitorias ?? undefined,
     funcionou: row.funcionou ?? undefined,
     carrega: row.carrega ?? undefined,
+    levar: row.levar ?? undefined,
     criadoEm: row.criado_em,
     atualizadoEm: row.atualizado_em,
   };
@@ -47,6 +49,7 @@ export async function POST(request: NextRequest) {
     vitorias: body.vitorias ?? null,
     funcionou: body.funcionou ?? null,
     carrega: body.carrega ?? null,
+    levar: body.levar ?? null,
     criado_em: body.criadoEm,
     atualizado_em: body.atualizadoEm,
   });

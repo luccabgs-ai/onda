@@ -10,8 +10,9 @@ Telas: **Hoje** (painel do dia), **Áreas**, **Objetivos** (+ metas), **Organiza
 de semana/mês/semestre/ano), **Projetos** (quadro kanban por projeto), **Calendário**,
 **Hábitos**, **Cronômetros** e **Ritual** (check-in da manhã e check-out da noite).
 
-No **celular** (tela até 768px) o app é outro: 4 abas — **Hoje**, **Foco** (cronômetro),
-**Projetos** e **Rumo** (objetivos + linha de chegada da semana) — em `components/celular/`.
+No **celular** (tela até 768px) o app é outro: 5 abas — **Hoje** (três momentos do dia),
+**Agenda** (dia/semana/mês com plano × feito), **Foco** (cronômetro), **Projetos** e **Rumo**
+(objetivos + linha de chegada da semana) — em `components/celular/`.
 É instalável na tela inicial (PWA) e manda lembretes às 7h, 12h e 21h. O Lucca pediu que a
 versão de PC **não mude** por causa do celular: o que for de celular fica atrás de
 `useTelaPequena()`; antes de mexer numa tela de PC, pergunte.
@@ -101,7 +102,14 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
   aparecem. "Começar foco agora" inicia uma sessão **avulsa** (`iniciarAvulso`, sem cronômetro
   salvo, com a duração do bloco) — por isso, pra achar o cronômetro de uma sessão use sempre
   `presetDaSessao()`, nunca só `presets.find`.
-- **Ritual**: no máximo um registro por dia e por tipo (id = `${data}-${tipo}`), gravado com
+- **Hoje do celular, três momentos** (`HojeCelular`): segue o que já foi feito, não só a hora —
+  sem ritual da manhã pede a abertura (até 18h); a partir das 11h sem registro `meio`, pede o ponto
+  do meio-dia (manter/trocar vitórias + energia); a partir das 18h, o fechamento. O ritual é feito
+  **na própria tela** (não em modal). No fechamento, cada vitória não feita pode ir pra
+  `levar` (jsonb no ritual da noite) — **nada passa sozinho**: `levar` e o `carrega` ("amanhã
+  eu começo por…") só viram **sugestão** na manhã seguinte. Contas de bloco planejado × feito
+  ficam em `lib/agenda.ts`.
+- **Ritual**: tipos `manha`, `meio` e `noite`; no máximo um registro por dia e por tipo (id = `${data}-${tipo}`), gravado com
   upsert. O check-in da manhã é o que acende o selo na barra lateral.
 
 ## Armadilhas que já morderam aqui

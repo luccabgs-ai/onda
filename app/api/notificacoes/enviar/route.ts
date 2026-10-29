@@ -35,12 +35,14 @@ async function montar(momento: Momento, hoje: string): Promise<Notificacao | nul
   if (error) throw new Error(error.message);
   const manha = data?.find(r => r.tipo === 'manha');
   const noite = data?.find(r => r.tipo === 'noite');
+  const meio = data?.find(r => r.tipo === 'meio');
 
   if (momento === 'manha') {
     if (manha) return null;
     return { titulo: 'Bom dia', corpo: 'Abra o dia: como você acordou e as 3 vitórias de hoje.', tag: 'manha' };
   }
   if (momento === 'meio') {
+    if (meio) return null;
     if (!manha) return { titulo: 'Meio do dia', corpo: 'O dia ainda não foi aberto. Dá tempo de escolher o que faz ele valer.', tag: 'meio' };
     const { feitas, total } = await vitoriasFeitas((manha.vitorias ?? []) as PrioridadeRitual[], hoje);
     return {

@@ -112,6 +112,7 @@ create table rituais (
   vitorias jsonb,
   funcionou text,
   carrega text,
+  levar jsonb,       -- noite: vitórias levadas pra amanhã (viram sugestão de manhã)
   criado_em text not null,
   atualizado_em text not null
 );
