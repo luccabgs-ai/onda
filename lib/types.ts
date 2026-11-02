@@ -162,14 +162,14 @@ export interface CronometroSessao {
   taskId?: string;              // no que está focando; ausente = foco livre
   rotulo?: string;              // nome opcional do foco livre ("estudar", "e-mails")
   avulso?: { nome: string; fases: CronometroFase[] };  // sessão sem cronômetro salvo (bloco do calendário, sessão rápida)
-  habitoId?: string | null;     // hábito a concluir no fim, escolhido na hora; null = nenhum; ausente = o do cronômetro
+  habitoId?: string | null;     // foco num hábito, concluído no fim; null = foco em outra coisa; ausente = o do cronômetro
 }
 
 /**
- * No que uma sessão de cronômetro vai focar: uma tarefa ou foco livre (com nome opcional) e,
- * à parte, o hábito que ela conclui no fim (null = nenhum; ausente = o do cronômetro).
+ * No que uma sessão de cronômetro vai focar — uma coisa só: uma tarefa, um hábito (que a sessão
+ * conclui no fim) ou foco livre (com nome opcional).
  */
-export type AlvoFoco = ({ taskId: string } | { rotulo?: string }) & { habitoId?: string | null };
+export type AlvoFoco = { taskId: string } | { habitoId: string } | { rotulo?: string };
 
 /**
  * Um bloco de foco feito — uma linha por fase de foco (descanso não conta). Tarefa, projeto e

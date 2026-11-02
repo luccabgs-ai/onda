@@ -16,6 +16,9 @@ export function presetDaSessao(sessao: CronometroSessao, presets: CronometroPres
   return presets.find(p => p.id === sessao.presetId);
 }
 
+/** Foco num hábito conclui ele no fim; foco em tarefa ou livre não conclui nenhum (nem o do cronômetro). */
+const habitoDoAlvo = (alvo?: AlvoFoco) => !alvo ? undefined : 'habitoId' in alvo ? alvo.habitoId : null;
+
 const STORAGE_KEY = 'onda-cronometro-sessao-v1';
 
 /** Durações oferecidas na sessão rápida, em minutos de foco. */
@@ -73,7 +76,7 @@ export function useCronometroSessao() {
       faseIniciouEm: new Date(agora).toISOString(),
       taskId: alvo && 'taskId' in alvo ? alvo.taskId : undefined,
       rotulo: alvo && 'rotulo' in alvo ? alvo.rotulo?.trim() || undefined : undefined,
-      habitoId: alvo?.habitoId,
+      habitoId: habitoDoAlvo(alvo),
     });
   }, []);
 
@@ -114,7 +117,7 @@ export function useCronometroSessao() {
       faseIniciouEm: new Date(agora).toISOString(),
       taskId: alvo && 'taskId' in alvo ? alvo.taskId : undefined,
       rotulo: alvo && 'rotulo' in alvo ? alvo.rotulo?.trim() || undefined : undefined,
-      habitoId: alvo?.habitoId,
+      habitoId: habitoDoAlvo(alvo),
       avulso: { nome, fases },
     });
   }, []);

@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { AlvoFoco, CronometroFase, CronometroPreset, Habito, Project, Task } from '@/lib/types';
+import { AREAS } from '@/lib/data';
 import { duracaoTotalMin } from '@/lib/cronometrosStore';
 import { formatarMinutos, fasesDaSessaoRapida, POMODORO_DESCANSO_MIN } from '@/lib/focoStore';
 import { DURACOES_RAPIDAS, lerSessaoRapida, guardarSessaoRapida } from '@/lib/cronometroSessaoStore';
@@ -20,12 +21,12 @@ interface Props {
 }
 
 const LIVRE = 'livre';
+const HAB = 'hab:';
 
 /**
- * "No que você vai focar?" — antes de começar um cronômetro. Sugere o que já está em andamento,
- * as vitórias de hoje e o que tem prazo; busca em todas as tarefas abertas; ou foco livre. À
- * parte, o hábito que a sessão conclui no fim. Sem `preset`, é a sessão rápida: escolhe também
- * o tempo e se tem pausas.
+ * "No que você vai focar?" — antes de começar um cronômetro. Uma coisa só: uma tarefa (o que está
+ * em andamento, as vitórias de hoje, o que tem prazo, ou busca), um hábito de hoje (concluído no
+ * fim) ou foco livre. Sem `preset`, é a sessão rápida: escolhe também o tempo e se tem pausas.
  */
 export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, vitoriasTaskIds, inicial, onCancelar, onComecar }: Props) {
   const rapida = !preset;
@@ -36,21 +37,17 @@ export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, v
     .filter(t => !!t.dueDate && t.dueDate <= hoje && !fazendo.includes(t) && !vitorias.includes(t))
     .sort((a, b) => a.dueDate!.localeCompare(b.dueDate!));
 
-  // Na sessão rápida o padrão é não ligar a nada; num cronômetro, a tarefa mais provável.
-  const [escolhido, setEscolhido] = useState<string>(inicial ?? (rapida ? LIVRE : fazendo[0]?.id ?? vitorias[0]?.id ?? comPrazo[0]?.id ?? LIVRE));
+  // `escolhido`: id da tarefa, `hab:<id>` de um hábito, ou LIVRE. Na sessão rápida o padrão é
+  // foco livre; num cronômetro com hábito vinculado, esse hábito; senão, a tarefa mais provável.
+  const [escolhido, setEscolhido] = useState<string>(inicial ?? (
+    rapida ? LIVRE : preset.habitoId ? HAB + preset.habitoId : fazendo[0]?.id ?? vitorias[0]?.id ?? comPrazo[0]?.id ?? LIVRE));
   const [rotulo, setRotulo] = useState('');
   const [busca, setBusca] = useState('');
-  const [habitoId, setHabitoId] = useState<string | null>(preset?.habitoId ?? null);
-  const [todosHabitos, setTodosHabitos] = useState(false);
   const [config, setConfig] = useState(lerSessaoRapida);
 
-  // Hábitos sugeridos: os de hoje ainda não feitos (e o já escolhido); o resto sob "outros".
+  // Hábitos sugeridos: os de hoje ainda não feitos, e o vinculado ao cronômetro.
   const diaSemana = new Date(`${hoje}T12:00:00`).getDay();
-  const deHoje = (h: Habito) => h.diasSemana.includes(diaSemana) && !h.votos[hoje];
-  const habitosVisiveis = todosHabitos
-    ? [...habitos].sort((a, b) => Number(!!a.votos[hoje]) - Number(!!b.votos[hoje]))
-    : habitos.filter(h => deHoje(h) || h.id === habitoId);
-  const habitoEscolhido = habitos.find(h => h.id === habitoId);
+  const habitosHoje = habitos.filter(h => (h.diasSemana.includes(diaSemana) && !h.votos[hoje]) || h.id === preset?.habitoId);
 
   const minutosRapida = Math.min(300, Math.max(1, Math.round(config.minutos) || 1));
   const fasesRapida = fasesDaSessaoRapida(minutosRapida, config.pausas);
@@ -65,13 +62,13 @@ export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, v
   const projeto = (t: Task) => projects.find(p => p.id === t.projectId);
   const q = busca.trim().toLowerCase();
   const achadas = q ? abertas.filter(t => t.title.toLowerCase().includes(q) || (projeto(t)?.title ?? '').toLowerCase().includes(q)) : [];
+  const habitosAchados = q ? habitos.filter(h => h.acao.toLowerCase().includes(q)) : [];
   // A tarefa que veio de "Focar nesta tarefa" aparece mesmo se não estiver em nenhum grupo.
   const extra = inicial && !q ? abertas.filter(t => t.id === inicial && !fazendo.includes(t) && !vitorias.includes(t) && !comPrazo.includes(t)) : [];
 
-  const comecar = () => {
-    const alvo: AlvoFoco = escolhido === LIVRE ? { rotulo, habitoId } : { taskId: escolhido, habitoId };
-    onComecar(alvo, rapida ? fasesRapida : undefined);
-  };
+  const alvoDe = (id: string): AlvoFoco =>
+    id === LIVRE ? { rotulo } : id.startsWith(HAB) ? { habitoId: id.slice(HAB.length) } : { taskId: id };
+  const comecar = (id = escolhido) => onComecar(alvoDe(id), rapida ? fasesRapida : undefined);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') { e.preventDefault(); comecar(); }
@@ -92,7 +89,7 @@ export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, v
       <button
         key={t.id}
         onClick={() => setEscolhido(t.id)}
-        onDoubleClick={() => onComecar({ taskId: t.id, habitoId }, rapida ? fasesRapida : undefined)}
+        onDoubleClick={() => comecar(t.id)}
         style={{
           width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 11, padding: '9px 10px', borderRadius: 7,
           background: ativo ? tinta(10) : 'transparent', boxShadow: ativo ? 'inset 0 0 0 1px var(--ink)' : 'none',
@@ -108,6 +105,31 @@ export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, v
         {(marca || vencida) && (
           <span style={{ fontSize: 10.5, color: 'var(--hanko)', whiteSpace: 'nowrap' }}>{vencida ? 'venceu' : marca}</span>
         )}
+      </button>
+    );
+  };
+
+  const opcaoHabito = (h: Habito) => {
+    const area = AREAS.find(a => a.id === h.areaId);
+    const id = HAB + h.id;
+    const ativo = escolhido === id;
+    return (
+      <button
+        key={h.id}
+        onClick={() => setEscolhido(id)}
+        onDoubleClick={() => comecar(id)}
+        style={{
+          width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 11, padding: '9px 10px', borderRadius: 7,
+          background: ativo ? tinta(10) : 'transparent', boxShadow: ativo ? 'inset 0 0 0 1px var(--ink)' : 'none',
+        }}
+      >
+        <span style={{ width: 9, height: 9, borderRadius: '50%', background: area?.color ?? 'var(--moss)', flexShrink: 0 }} />
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 14, color: 'var(--char)' }}>{h.acao}</span>
+          <span style={{ display: 'block', fontSize: 11.5, color: 'var(--char-mute)' }}>
+            hábito · {h.votos[hoje] ? 'já feito hoje' : 'marcado como feito ao terminar'}
+          </span>
+        </span>
       </button>
     );
   };
@@ -192,7 +214,7 @@ export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, v
             autoFocus={!inicial}
             value={busca}
             onChange={e => setBusca(e.target.value)}
-            placeholder="buscar em todas as tarefas abertas…"
+            placeholder="buscar em tarefas abertas e hábitos…"
             style={{
               width: '100%', padding: '10px 12px', borderRadius: 6, border: `1px solid ${tinta(18)}`,
               background: 'var(--card-bg)', fontSize: 14, color: 'var(--char)',
@@ -204,9 +226,9 @@ export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, v
           {q ? (
             <>
               {grupo('resultado da busca')}
-              {achadas.length === 0
-                ? <p style={{ fontSize: 13, color: 'var(--char-mute)', margin: '6px 10px' }}>Nenhuma tarefa aberta com esse nome.</p>
-                : achadas.map(t => opcao(t))}
+              {achadas.length + habitosAchados.length === 0
+                ? <p style={{ fontSize: 13, color: 'var(--char-mute)', margin: '6px 10px' }}>Nenhuma tarefa aberta ou hábito com esse nome.</p>
+                : <>{achadas.map(t => opcao(t))}{habitosAchados.map(opcaoHabito)}</>}
             </>
           ) : (
             <>
@@ -222,7 +244,9 @@ export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, v
             </>
           )}
 
-          {grupo('sem tarefa')}
+          {!q && habitosHoje.length > 0 && <>{grupo('hábitos de hoje')}{habitosHoje.map(opcaoHabito)}</>}
+
+          {grupo('sem tarefa nem hábito')}
           <button
             onClick={() => setEscolhido(LIVRE)}
             style={{
@@ -241,7 +265,7 @@ export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, v
               autoFocus
               value={rotulo}
               onChange={e => setRotulo(e.target.value)}
-              placeholder={habitoEscolhido ? `nome (opcional): fica “${habitoEscolhido.acao}”` : 'dar um nome (opcional): estudar, e-mails…'}
+              placeholder="dar um nome (opcional): estudar, e-mails…"
               style={{
                 margin: '4px 10px 6px 30px', width: 'calc(100% - 40px)', padding: '7px 10px', borderRadius: 5,
                 border: `1px solid ${tinta(16)}`, background: 'var(--card-bg)', fontSize: 13, color: 'var(--char)',
@@ -250,40 +274,10 @@ export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, v
           )}
         </div>
 
-        {habitos.length > 0 && (
-          <div style={{ padding: '10px 22px 12px', borderTop: `1px solid ${tinta(8)}` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 7 }}>
-              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--char-mute)' }}>
-                ao terminar, concluir o hábito
-              </span>
-              <button onClick={() => setTodosHabitos(v => !v)} style={{ fontSize: 11.5, color: 'var(--char-mute)', textDecoration: 'underline' }}>
-                {todosHabitos ? 'só os de hoje' : 'todos os hábitos'}
-              </button>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 96, overflowY: 'auto' }}>
-              {habitosVisiveis.length === 0 && (
-                <span style={{ fontSize: 12.5, color: 'var(--char-mute)' }}>Nenhum hábito pendente pra hoje.</span>
-              )}
-              {habitosVisiveis.map(h => {
-                const ativo = h.id === habitoId;
-                return (
-                  <button key={h.id} onClick={() => setHabitoId(ativo ? null : h.id)} style={{
-                    padding: '5px 11px', borderRadius: 14, fontSize: 12.5,
-                    border: `1px solid ${ativo ? 'var(--moss)' : tinta(16)}`,
-                    background: ativo ? 'var(--moss)' : 'transparent', color: ativo ? 'var(--washi)' : 'var(--char-soft)',
-                  }}>
-                    {ativo && '✓ '}{h.acao}{h.votos[hoje] && !ativo && <span style={{ color: 'var(--moss)' }}> · feito hoje</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         <div style={{ padding: '12px 18px', borderTop: `1px solid ${tinta(8)}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
           <button onClick={onCancelar} style={{ fontSize: 12.5, color: 'var(--char-mute)', textDecoration: 'underline' }}>cancelar</button>
           <button
-            onClick={comecar}
+            onClick={() => comecar()}
             style={{ padding: '9px 18px', background: 'var(--ink)', color: 'var(--washi)', borderRadius: 5, fontSize: 13, fontWeight: 500 }}
           >
             Começar · {formatarMinutos(duracaoTotal)}

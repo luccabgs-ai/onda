@@ -375,8 +375,7 @@ export default function CronometrosScreen({
           onDefinirContador={valor => task && definirContador(task.id, valor)}
           onFazerDeNovo={presetDoBloco && (!task || task.status !== 'concluido') ? () => {
             focoStore.dispensarAnotacao();
-            const habitoId = aAnotar.habitoId ?? null;
-            iniciar(presetDoBloco, task ? { taskId: task.id, habitoId } : { rotulo: ultimo.rotulo, habitoId });
+            iniciar(presetDoBloco, task ? { taskId: task.id } : aAnotar.habitoId ? { habitoId: aAnotar.habitoId } : { rotulo: ultimo.rotulo });
           } : undefined}
         />
       </div>
