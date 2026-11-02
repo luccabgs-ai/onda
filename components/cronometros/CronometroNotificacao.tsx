@@ -6,7 +6,7 @@ import { useCronometrosStore, duracaoTotalMin } from '@/lib/cronometrosStore';
 import { useCronometroSessao, presetDaSessao } from '@/lib/cronometroSessaoStore';
 import { useHabitsStore } from '@/lib/habitsStore';
 import { useProjectsStore } from '@/lib/projectsStore';
-import { useFocoStore, formatarMinutos, somaMinutos } from '@/lib/focoStore';
+import { useFocoStore, formatarMinutos, somaMinutos, habitoDaSessao } from '@/lib/focoStore';
 import { playBeep } from '@/lib/cronometroSom';
 import { IcClose } from '@/components/ui/icons';
 
@@ -41,7 +41,7 @@ interface Props {
 export default function CronometroNotificacao({ cronometrosStore, sessaoStore, habitsStore, projectsStore, focoStore, onAbrirCronometros }: Props) {
   const { presets } = cronometrosStore;
   const { sessao, avancarFase } = sessaoStore;
-  const { completarHabito } = habitsStore;
+  const { completarHabito, habitos } = habitsStore;
   const { tasks, projects } = projectsStore;
   const { registrarFaseAtual, blocosDaSessao, pedirAnotacao } = focoStore;
   const [toast, setToast] = useState<Toast | null>(null);
@@ -59,7 +59,7 @@ export default function CronometroNotificacao({ cronometrosStore, sessaoStore, h
       const isLastFase = sessao.faseIndex === preset.fases.length - 1;
       // Fase de foco que acabou sozinha vira um bloco gravado (o fim é o horário previsto,
       // mesmo que o app tenha ficado fechado). Descanso não é gravado.
-      const bloco = registrarFaseAtual({ sessao, preset, cheia: true, tasks, projects });
+      const bloco = registrarFaseAtual({ sessao, preset, cheia: true, tasks, projects, habitos });
       let mensagem: string;
       if (isLastFase) {
         const anteriores = sessao.sessaoId ? blocosDaSessao(sessao.sessaoId).filter(b => b.id !== bloco?.id) : [];
@@ -68,11 +68,13 @@ export default function CronometroNotificacao({ cronometrosStore, sessaoStore, h
         mensagem = total > 0
           ? `${formatarMinutos(total)}${emQue ? ` em ${emQue}` : ' de foco'}. Clique pra anotar o que avançou.`
           : `${preset.nome} concluído — ${formatarDuracao(duracaoTotalMin(preset.fases))} de dedicação.`;
-        if (preset.habitoId) {
-          completarHabito(preset.habitoId);
-          mensagem += ' Hábito marcado como feito.';
+        const habitoId = habitoDaSessao(sessao, preset);
+        if (habitoId) {
+          completarHabito(habitoId);
+          const acao = habitos.find(h => h.id === habitoId)?.acao;
+          mensagem += acao ? ` “${acao}” marcado como feito hoje.` : ' Hábito marcado como feito.';
         }
-        if (sessao.sessaoId && total > 0) pedirAnotacao(sessao.sessaoId, false);
+        if (sessao.sessaoId && total > 0) pedirAnotacao(sessao.sessaoId, false, habitoId);
       } else {
         mensagem = preset.fases[sessao.faseIndex].tipo === 'foco'
           ? `${preset.nome} — foco concluído, hora do descanso.`
@@ -85,7 +87,7 @@ export default function CronometroNotificacao({ cronometrosStore, sessaoStore, h
     tick();
     const id = setInterval(tick, 250);
     return () => clearInterval(id);
-  }, [sessao, presets, avancarFase, completarHabito, registrarFaseAtual, blocosDaSessao, pedirAnotacao, tasks, projects]);
+  }, [sessao, presets, avancarFase, completarHabito, registrarFaseAtual, blocosDaSessao, pedirAnotacao, tasks, projects, habitos]);
 
   useEffect(() => {
     if (!toast) return;

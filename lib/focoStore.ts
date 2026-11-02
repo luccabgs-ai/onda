@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback } from 'react';
-import { CronometroPreset, CronometroSessao, Project, SessaoFoco, Task } from './types';
+import { CronometroPreset, CronometroSessao, Habito, Project, SessaoFoco, Task } from './types';
 import { useRetryFetch } from './useRetryFetch';
 import { gravar, jsonComNulos } from './gravacao';
 import { MINIMO_MIN_BLOCO_INTERROMPIDO, minutosFeitosNaFase, montarBloco } from './foco';
@@ -13,7 +13,8 @@ export function useFocoStore() {
   const [loaded, setLoaded] = useState(false);
   // A sessão que acabou e ainda espera o "o que avançou?". Só em memória — se recarregar, a
   // pergunta some, mas o tempo já está gravado.
-  const [aAnotar, setAAnotar] = useState<{ sessaoId: string; encerradaCedo: boolean } | null>(null);
+  // `habitoId` = o hábito que a sessão conclui, pra tela do fim mostrar (ou oferecer, se encerrou cedo).
+  const [aAnotar, setAAnotar] = useState<{ sessaoId: string; encerradaCedo: boolean; habitoId?: string } | null>(null);
 
   const erro = useRetryFetch(async () => {
     try {
@@ -47,14 +48,15 @@ export function useFocoStore() {
     cheia: boolean;
     tasks: Task[];
     projects: Project[];
+    habitos?: Habito[];
   }): SessaoFoco | null => {
-    const { sessao, preset, cheia, tasks, projects } = params;
+    const { sessao, preset, cheia, tasks, projects, habitos } = params;
     if (preset.fases[sessao.faseIndex]?.tipo !== 'foco') return null;
     const agora = Date.now();
     const minutos = minutosFeitosNaFase(sessao, preset, agora, cheia);
     if (!cheia && minutos < MINIMO_MIN_BLOCO_INTERROMPIDO) return null;
     const fimMs = cheia ? new Date(sessao.faseTerminaEm).getTime() : agora;
-    const bloco = montarBloco({ sessao, preset, minutos, fimMs, tasks, projects });
+    const bloco = montarBloco({ sessao, preset, minutos, fimMs, tasks, projects, habitos });
     registrar(bloco);
     return bloco;
   }, [registrar]);
@@ -73,7 +75,8 @@ export function useFocoStore() {
     gravar(`/api/foco/${id}`, { method: 'DELETE' });
   }, []);
 
-  const pedirAnotacao = useCallback((sessaoId: string, encerradaCedo: boolean) => setAAnotar({ sessaoId, encerradaCedo }), []);
+  const pedirAnotacao = useCallback((sessaoId: string, encerradaCedo: boolean, habitoId?: string) =>
+    setAAnotar({ sessaoId, encerradaCedo, habitoId }), []);
   const dispensarAnotacao = useCallback(() => setAAnotar(null), []);
 
   /** Blocos gravados de uma sessão, na ordem. */
