@@ -85,6 +85,11 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
   qualquer tela); pular fase ou encerrar grava o tempo feito só se passou de
   `MINIMO_MIN_BLOCO_INTERROMPIDO` (5 min); reiniciar a fase descarta. Título, projeto e área da
   tarefa são copiados no bloco, pra o histórico sobreviver à tarefa apagada.
+  Na mesma escolha dá pra ligar um **hábito** que a sessão conclui no fim (`sessao.habitoId`:
+  `null` = nenhum, ausente = o do cronômetro — leia sempre via `habitoDaSessao()`). Fim natural
+  marca sozinho; encerrar cedo só oferece, já marcado, na tela do fim. **Sessão rápida**: tempo
+  + "com pausas" (`fasesDaSessaoRapida`, rodadas de 25/5) escolhidos na hora, roda como sessão
+  avulsa e não vira cronômetro salvo.
 - **Calendário, visão Dia** (`components/calendario/DiaView.tsx`): linha do tempo das 6h à meia-noite
   com duas faixas — **plano** (eventos e blocos de foco) e **feito** (`sessoes_foco`). Bloco de foco é
   um `CalendarEvent` com `type: 'foco'`, `endTime` e `taskId` opcional; aparece onde eventos já

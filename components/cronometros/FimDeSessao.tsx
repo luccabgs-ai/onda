@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Project, SessaoFoco, Task } from '@/lib/types';
+import { Habito, Project, SessaoFoco, Task } from '@/lib/types';
 import { formatarMinutos, somaMinutos } from '@/lib/focoStore';
 import { BotoesContador, formatarValor } from '@/components/projetos/ProgressoTarefa';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -11,15 +11,23 @@ interface Props {
   encerradaCedo: boolean;
   task?: Task;                    // a tarefa como está agora (pode ter sido apagada)
   project?: Project;
-  onGuardar: (nota: string | undefined, concluirTarefa: boolean) => void;
+  habito?: Habito;                // o hábito ligado à sessão
+  habitoFeito: boolean;           // já marcado hoje (no fim natural, foi marcado sozinho)
+  onGuardar: (nota: string | undefined, concluirTarefa: boolean, marcarHabito: boolean) => void;
   onDefinirContador: (valor: number) => void;
   onFazerDeNovo?: () => void;
 }
 
-/** Fim da sessão: quanto tempo foi e em quê, "o que avançou?" e, se for o caso, concluir a tarefa. */
-export default function FimDeSessao({ blocos, encerradaCedo, task, project, onGuardar, onDefinirContador, onFazerDeNovo }: Props) {
+/**
+ * Fim da sessão: quanto tempo foi e em quê, "o que avançou?" e, se for o caso, concluir a tarefa.
+ * Hábito ligado: no fim natural ele já foi marcado; encerrada cedo, a marcação vem oferecida.
+ */
+export default function FimDeSessao({ blocos, encerradaCedo, task, project, habito, habitoFeito, onGuardar, onDefinirContador, onFazerDeNovo }: Props) {
   const [nota, setNota] = useState('');
   const [concluir, setConcluir] = useState(false);
+  const [marcarHabito, setMarcarHabito] = useState(true);
+  const oferecerHabito = !!habito && !habitoFeito;
+  const guardar = (comNota: boolean) => onGuardar(comNota ? nota.trim() || undefined : undefined, concluir, oferecerHabito && marcarHabito);
   const total = somaMinutos(blocos);
   const ultimo = blocos[blocos.length - 1];
   const emQue = task?.title ?? ultimo?.taskTitulo ?? ultimo?.rotulo;
@@ -42,7 +50,7 @@ export default function FimDeSessao({ blocos, encerradaCedo, task, project, onGu
         autoFocus
         value={nota}
         onChange={e => setNota(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onGuardar(nota.trim() || undefined, concluir); } }}
+        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); guardar(true); } }}
         rows={2}
         placeholder="O que avançou? (opcional)"
         style={{
@@ -82,15 +90,33 @@ export default function FimDeSessao({ blocos, encerradaCedo, task, project, onGu
         </div>
       )}
 
+      {habito && (habitoFeito ? (
+        <p style={{ fontSize: 13, color: 'var(--moss)', margin: '12px 0 0' }}>✓ &ldquo;{habito.acao}&rdquo; marcado como feito hoje</p>
+      ) : (
+        // A linha inteira alterna; o Checkbox fica sem onChange pro clique não contar duas vezes.
+        <div
+          onClick={() => setMarcarHabito(v => !v)}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, cursor: 'pointer', textAlign: 'left',
+            padding: '12px 14px', marginTop: 10, background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: 8,
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13.5, color: 'var(--char)' }}>
+            <Checkbox checked={marcarHabito} size={18} /> Marcar &ldquo;{habito.acao}&rdquo; como feito hoje
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--char-mute)' }}>hábito</span>
+        </div>
+      ))}
+
       <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 18, flexWrap: 'wrap' }}>
         <button
-          onClick={() => onGuardar(undefined, concluir)}
+          onClick={() => guardar(false)}
           style={{ padding: '9px 20px', border: `1px solid ${tinta(22)}`, borderRadius: 999, fontSize: 13.5, color: 'var(--char-soft)' }}
         >
           Pular
         </button>
         <button
-          onClick={() => onGuardar(nota.trim() || undefined, concluir)}
+          onClick={() => guardar(true)}
           style={{ padding: '9px 22px', background: 'var(--ink)', color: 'var(--washi)', borderRadius: 999, fontSize: 13.5, fontWeight: 600 }}
         >
           Guardar

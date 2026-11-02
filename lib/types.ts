@@ -159,11 +159,15 @@ export interface CronometroSessao {
   faseIniciouEm?: string;       // ISO — quando a fase atual começou (vira o "início" do bloco gravado)
   taskId?: string;              // no que está focando; ausente = foco livre
   rotulo?: string;              // nome opcional do foco livre ("estudar", "e-mails")
-  avulso?: { nome: string; fases: CronometroFase[] };  // sessão sem cronômetro salvo (bloco do calendário)
+  avulso?: { nome: string; fases: CronometroFase[] };  // sessão sem cronômetro salvo (bloco do calendário, sessão rápida)
+  habitoId?: string | null;     // hábito a concluir no fim, escolhido na hora; null = nenhum; ausente = o do cronômetro
 }
 
-/** No que uma sessão de cronômetro vai focar: uma tarefa ou foco livre (com nome opcional). */
-export type AlvoFoco = { taskId: string } | { rotulo?: string };
+/**
+ * No que uma sessão de cronômetro vai focar: uma tarefa ou foco livre (com nome opcional) e,
+ * à parte, o hábito que ela conclui no fim (null = nenhum; ausente = o do cronômetro).
+ */
+export type AlvoFoco = ({ taskId: string } | { rotulo?: string }) & { habitoId?: string | null };
 
 /**
  * Um bloco de foco feito — uma linha por fase de foco (descanso não conta). Tarefa, projeto e

@@ -1,13 +1,13 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { AlvoFoco, CronometroPreset, Habito } from '@/lib/types';
+import { AlvoFoco, CronometroFase, CronometroPreset, Habito } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { useCronometrosStore, duracaoTotalMin } from '@/lib/cronometrosStore';
 import { useCronometroSessao, presetDaSessao } from '@/lib/cronometroSessaoStore';
 import { useHabitsStore } from '@/lib/habitsStore';
 import { useProjectsStore } from '@/lib/projectsStore';
 import { useRituaisStore } from '@/lib/rituaisStore';
-import { useFocoStore, MINIMO_MIN_BLOCO_INTERROMPIDO } from '@/lib/focoStore';
+import { useFocoStore, MINIMO_MIN_BLOCO_INTERROMPIDO, habitoDaSessao } from '@/lib/focoStore';
 import { toDateStr } from '@/lib/nutricao';
 import EscolherFoco from './EscolherFoco';
 import FimDeSessao from './FimDeSessao';
@@ -126,11 +126,11 @@ function PresetCard({
 }
 
 function CronometroRunner({
-  preset, sessaoStore, habitos, alvo, onPularFase, onEncerrar,
+  preset, sessaoStore, habito, alvo, onPularFase, onEncerrar,
 }: {
   preset: CronometroPreset;
   sessaoStore: ReturnType<typeof useCronometroSessao>;
-  habitos: Habito[];
+  habito?: Habito;               // o que a sessão conclui no fim
   alvo: { titulo: string; projeto?: string; cor?: string };
   onPularFase: () => void;
   onEncerrar: () => void;
@@ -183,10 +183,10 @@ function CronometroRunner({
         <span style={{ color: 'var(--char)', fontWeight: 500 }}>{alvo.titulo}</span>
         {alvo.projeto && <><span style={{ color: 'var(--char-mute)' }}>›</span>{alvo.projeto}</>}
       </div>
-      {preset.habitoId && (
+      {habito && (
         <div style={{ fontSize: 11.5, color: 'var(--char-mute)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 5 }}>
           <IcHabito size={12} stroke="var(--char-mute)" sw={1.6} />
-          conclui &ldquo;{habitos.find(h => h.id === preset.habitoId)?.acao ?? '…'}&rdquo; ao terminar
+          conclui &ldquo;{habito.acao}&rdquo; ao terminar
         </div>
       )}
 
@@ -282,12 +282,14 @@ export default function CronometrosScreen({
   const [editing, setEditing] = useState<CronometroPreset | null>(null);
   const [hoje] = useState(() => toDateStr(new Date()));
   // Cronômetro escolhido esperando a resposta de "no que você vai focar?" (+ tarefa já marcada).
-  const [escolhendo, setEscolhendo] = useState<{ preset: CronometroPreset; taskId?: string } | null>(null);
+  // Sem preset = sessão rápida.
+  const [escolhendo, setEscolhendo] = useState<{ preset?: CronometroPreset; taskId?: string } | null>(null);
   const [destaqueId, setDestaqueId] = useState<string | undefined>();
 
   const { presets, createPreset, updatePreset, deletePreset } = cronometrosStore;
-  const { sessao, iniciar, parar, avancarFase } = sessaoStore;
+  const { sessao, iniciar, iniciarAvulso, parar, avancarFase } = sessaoStore;
   const { tasks, projects, moveTask, definirContador } = projectsStore;
+  const { habitos, completarHabito } = habitsStore;
 
   const presetAtivo = sessao ? presetDaSessao(sessao, presets) ?? null : null;
 
@@ -310,31 +312,36 @@ export default function CronometrosScreen({
     setEditing(null);
   };
 
-  const comecar = (preset: CronometroPreset, alvo: AlvoFoco) => {
+  const comecar = (preset: CronometroPreset | undefined, alvo: AlvoFoco, fases?: CronometroFase[]) => {
     fecharEscolha();
-    iniciar(preset, alvo);
+    if (preset) iniciar(preset, alvo);
+    else if (fases) iniciarAvulso('Sessão rápida', fases, alvo);
   };
 
   // Pular ou encerrar no meio de um foco grava o tempo feito (se passou de 5 min).
   const pularFase = () => {
     if (!sessao || !presetAtivo) return;
-    focoStore.registrarFaseAtual({ sessao, preset: presetAtivo, cheia: false, tasks, projects });
+    focoStore.registrarFaseAtual({ sessao, preset: presetAtivo, cheia: false, tasks, projects, habitos });
     avancarFase(presetAtivo);
   };
   const encerrar = () => {
     if (!sessao || !presetAtivo) return;
-    const bloco = focoStore.registrarFaseAtual({ sessao, preset: presetAtivo, cheia: false, tasks, projects });
+    const bloco = focoStore.registrarFaseAtual({ sessao, preset: presetAtivo, cheia: false, tasks, projects, habitos });
     const jaTinha = sessao.sessaoId ? focoStore.blocosDaSessao(sessao.sessaoId).length > 0 : false;
-    if (sessao.sessaoId && (bloco || jaTinha)) focoStore.pedirAnotacao(sessao.sessaoId, true);
+    // Encerrar cedo não conclui o hábito sozinho: a tela do fim oferece, já marcado.
+    if (sessao.sessaoId && (bloco || jaTinha)) focoStore.pedirAnotacao(sessao.sessaoId, true, habitoDaSessao(sessao, presetAtivo));
     parar();
   };
+
+  const habitoAtivoId = sessao && presetAtivo ? habitoDaSessao(sessao, presetAtivo) : undefined;
+  const habitoAtivo = habitoAtivoId ? habitos.find(h => h.id === habitoAtivoId) : undefined;
 
   const alvoDaSessao = () => {
     const task = sessao?.taskId ? tasks.find(t => t.id === sessao.taskId) : undefined;
     const project = task ? projects.find(p => p.id === task.projectId) : undefined;
     return task
       ? { titulo: task.title, projeto: project?.title, cor: project?.color }
-      : { titulo: sessao?.rotulo || 'Foco livre' };
+      : { titulo: sessao?.rotulo || habitoAtivo?.acao || 'Foco livre' };
   };
 
   // Fim de sessão esperando o "o que avançou?" — vem do aviso global, então funciona mesmo se
@@ -346,9 +353,11 @@ export default function CronometrosScreen({
     const task = ultimo.taskId ? tasks.find(t => t.id === ultimo.taskId) : undefined;
     const project = task ? projects.find(p => p.id === task.projectId) : undefined;
     const presetDoBloco = presets.find(p => p.id === ultimo.presetId);
-    const guardar = (nota: string | undefined, concluirTarefa: boolean) => {
+    const habitoDoFim = aAnotar.habitoId ? habitos.find(h => h.id === aAnotar.habitoId) : undefined;
+    const guardar = (nota: string | undefined, concluirTarefa: boolean, marcarHabito: boolean) => {
       if (nota) focoStore.anotar(ultimo.id, nota);
       if (concluirTarefa && task) moveTask(task.id, 'concluido');
+      if (marcarHabito && habitoDoFim) completarHabito(habitoDoFim.id);
       setDestaqueId(ultimo.id);
       focoStore.dispensarAnotacao();
     };
@@ -360,11 +369,14 @@ export default function CronometrosScreen({
           encerradaCedo={aAnotar.encerradaCedo}
           task={task}
           project={project}
+          habito={habitoDoFim}
+          habitoFeito={!!habitoDoFim?.votos[hoje]}
           onGuardar={guardar}
           onDefinirContador={valor => task && definirContador(task.id, valor)}
           onFazerDeNovo={presetDoBloco && (!task || task.status !== 'concluido') ? () => {
             focoStore.dispensarAnotacao();
-            iniciar(presetDoBloco, task ? { taskId: task.id } : { rotulo: ultimo.rotulo });
+            const habitoId = aAnotar.habitoId ?? null;
+            iniciar(presetDoBloco, task ? { taskId: task.id, habitoId } : { rotulo: ultimo.rotulo, habitoId });
           } : undefined}
         />
       </div>
@@ -377,7 +389,7 @@ export default function CronometrosScreen({
         <CronometroRunner
           preset={presetAtivo}
           sessaoStore={sessaoStore}
-          habitos={habitsStore.habitos}
+          habito={habitoAtivo}
           alvo={alvoDaSessao()}
           onPularFase={pularFase}
           onEncerrar={encerrar}
@@ -420,12 +432,21 @@ export default function CronometrosScreen({
             no estilo Pomodoro, com descanso entre elas.
           </p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          style={{ padding: '9px 18px', background: 'var(--ink)', color: 'var(--washi)', borderRadius: 4, fontSize: 13, fontWeight: 500, flexShrink: 0 }}
-        >
-          + Novo cronômetro
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button
+            onClick={() => setShowCreate(true)}
+            style={{ padding: '9px 16px', border: '1px solid color-mix(in srgb, var(--ink) 22%, transparent)', color: 'var(--ink)', borderRadius: 4, fontSize: 13 }}
+          >
+            + Novo cronômetro
+          </button>
+          <button
+            onClick={() => setEscolhendo({})}
+            title="Escolha o tempo e comece — não fica salva como cronômetro"
+            style={{ padding: '9px 18px', background: 'var(--ink)', color: 'var(--washi)', borderRadius: 4, fontSize: 13, fontWeight: 500 }}
+          >
+            ▶ Sessão rápida
+          </button>
+        </div>
       </div>
 
       {/* Cronômetros à esquerda, tempo de foco à direita */}
@@ -485,11 +506,12 @@ export default function CronometrosScreen({
           preset={escolha.preset}
           tasks={tasks}
           projects={projects}
+          habitos={habitos}
           hoje={hoje}
           vitoriasTaskIds={vitoriasTaskIds}
           inicial={escolha.taskId}
           onCancelar={fecharEscolha}
-          onComecar={alvo => comecar(escolha.preset, alvo)}
+          onComecar={(alvo, fases) => comecar(escolha.preset, alvo, fases)}
         />
       )}
       {showCreate && (

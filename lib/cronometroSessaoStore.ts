@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { AlvoFoco, CronometroPreset, CronometroSessao } from './types';
+import { AlvoFoco, CronometroFase, CronometroPreset, CronometroSessao } from './types';
 
 /** id de "cronômetro" das sessões avulsas — não existe na lista de cronômetros salvos. */
 export const PRESET_AVULSO = 'avulso';
@@ -54,6 +54,7 @@ export function useCronometroSessao() {
       faseIniciouEm: new Date(agora).toISOString(),
       taskId: alvo && 'taskId' in alvo ? alvo.taskId : undefined,
       rotulo: alvo && 'rotulo' in alvo ? alvo.rotulo?.trim() || undefined : undefined,
+      habitoId: alvo?.habitoId,
     });
   }, []);
 
@@ -78,19 +79,24 @@ export function useCronometroSessao() {
     });
   }, []);
 
-  /** Sessão avulsa: um único bloco de foco de `minutos`, sem cronômetro salvo (vem do calendário). */
-  const iniciarAvulso = useCallback((nome: string, minutos: number, alvo?: AlvoFoco) => {
+  /**
+   * Sessão avulsa, sem cronômetro salvo: um bloco único de `minutos` (bloco do calendário) ou as
+   * fases montadas na hora (sessão rápida). Termina e some — não vira cronômetro.
+   */
+  const iniciarAvulso = useCallback((nome: string, duracao: number | CronometroFase[], alvo?: AlvoFoco) => {
+    const fases: CronometroFase[] = typeof duracao === 'number' ? [{ tipo: 'foco', minutos: duracao }] : duracao;
     const agora = Date.now();
     setSessao({
       presetId: PRESET_AVULSO,
       faseIndex: 0,
-      faseTerminaEm: new Date(agora + minutos * 60 * 1000).toISOString(),
+      faseTerminaEm: new Date(agora + fases[0].minutos * 60 * 1000).toISOString(),
       pausado: false,
       sessaoId: crypto.randomUUID(),
       faseIniciouEm: new Date(agora).toISOString(),
       taskId: alvo && 'taskId' in alvo ? alvo.taskId : undefined,
       rotulo: alvo && 'rotulo' in alvo ? alvo.rotulo?.trim() || undefined : undefined,
-      avulso: { nome, fases: [{ tipo: 'foco', minutos }] },
+      habitoId: alvo?.habitoId,
+      avulso: { nome, fases },
     });
   }, []);
 
@@ -112,6 +118,7 @@ export function useCronometroSessao() {
         taskId: prev.taskId,
         rotulo: prev.rotulo,
         avulso: prev.avulso,
+        habitoId: prev.habitoId,
       };
     });
   }, []);
