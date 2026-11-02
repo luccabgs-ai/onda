@@ -189,15 +189,16 @@ function FimDeFoco({ focoStore, projectsStore, habitsStore }: Pick<Props, 'focoS
   );
 }
 
-const pilula = (ativo: boolean, cor = 'var(--ink)') => ({
+const pilula = (ativo: boolean) => ({
   minHeight: 36, padding: '6px 13px', borderRadius: 18, fontSize: 13.5,
-  border: `1px solid ${ativo ? cor : tinta(18)}`, background: ativo ? cor : 'transparent',
+  border: `1px solid ${ativo ? 'var(--ink)' : tinta(18)}`, background: ativo ? 'var(--ink)' : 'transparent',
   color: ativo ? 'var(--washi)' : 'var(--char-soft)',
 });
 
 /**
- * "No que você vai focar?" antes de começar — tarefa ou foco livre, e o hábito que a sessão
- * conclui no fim. Sem `preset` é a sessão rápida: escolhe também o tempo e se tem pausas.
+ * "No que você vai focar?" antes de começar — uma coisa só: foco livre, um hábito de hoje
+ * (concluído no fim) ou uma tarefa. Tocar já começa. Sem `preset` é a sessão rápida: escolhe
+ * também o tempo e se tem pausas.
  */
 function EscolherAlvo({ preset, projectsStore, habitos, onComecar, onFechar }: {
   preset?: CronometroPreset;
@@ -208,7 +209,6 @@ function EscolherAlvo({ preset, projectsStore, habitos, onComecar, onFechar }: {
 }) {
   const [rotulo, setRotulo] = useState('');
   const [hoje] = useState(() => toDateStr(new Date()));
-  const [habitoId, setHabitoId] = useState<string | null>(preset?.habitoId ?? null);
   const [config, setConfig] = useState(lerSessaoRapida);
   const { tasks, projects } = projectsStore;
   const fases = preset ? undefined : fasesDaSessaoRapida(config.minutos, config.pausas);
@@ -218,10 +218,10 @@ function EscolherAlvo({ preset, projectsStore, habitos, onComecar, onFechar }: {
     setConfig(nova);
     guardarSessaoRapida(nova);
   };
-  const comecar = (alvo: AlvoFoco) => onComecar({ ...alvo, habitoId }, fases);
-  // Hábitos de hoje ainda não feitos (e o já escolhido).
+  const comecar = (alvo: AlvoFoco) => onComecar(alvo, fases);
+  // Hábitos de hoje ainda não feitos, e o vinculado ao cronômetro.
   const dia = new Date(`${hoje}T12:00:00`).getDay();
-  const habitosHoje = habitos.filter(h => (h.diasSemana.includes(dia) && !h.votos[hoje]) || h.id === habitoId);
+  const habitosHoje = habitos.filter(h => (h.diasSemana.includes(dia) && !h.votos[hoje]) || h.id === preset?.habitoId);
   const abertas = tasks.filter(t => t.status !== 'concluido')
     .sort((a, b) => Number(b.status === 'em_andamento') - Number(a.status === 'em_andamento')
       || Number(!!b.dueDate && b.dueDate <= hoje) - Number(!!a.dueDate && a.dueDate <= hoje));
@@ -233,7 +233,7 @@ function EscolherAlvo({ preset, projectsStore, habitos, onComecar, onFechar }: {
     >
       <div style={{ display: 'flex', gap: 8 }}>
         <input value={rotulo} onChange={e => setRotulo(e.target.value)}
-          placeholder={habitoId ? `nome (opcional): fica “${habitos.find(h => h.id === habitoId)?.acao ?? ''}”` : 'foco livre: estudar, e-mails…'}
+          placeholder="foco livre: estudar, e-mails…"
           style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: 10, border: `1px solid ${tinta(18)}`, background: 'var(--card-bg)', fontSize: 16 }} />
         <button onClick={() => comecar({ rotulo })} style={preset ? botaoContorno : { ...botaoContorno, background: 'var(--ink)', color: 'var(--washi)', borderColor: 'var(--ink)' }}>
           {preset ? 'livre' : `▶ ${duracao(config.minutos)}`}
@@ -260,12 +260,12 @@ function EscolherAlvo({ preset, projectsStore, habitos, onComecar, onFechar }: {
       )}
       {habitosHoje.length > 0 && (
         <>
-          <div style={{ ...kicker, margin: '14px 0 6px' }}>ao terminar, concluir o hábito</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div style={{ ...kicker, margin: '14px 0 6px' }}>hábitos de hoje · marcados ao terminar</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {habitosHoje.map(h => (
-              <button key={h.id} onClick={() => setHabitoId(habitoId === h.id ? null : h.id)} style={pilula(habitoId === h.id, 'var(--moss)')}>
-                {habitoId === h.id && '✓ '}{h.acao}
-              </button>
+              <OpcaoFolha key={h.id} cor={AREAS.find(a => a.id === h.areaId)?.color} texto={h.acao}
+                detalhe={h.id === preset?.habitoId ? 'deste cronômetro' : 'hábito'}
+                onClick={() => comecar({ habitoId: h.id })} />
             ))}
           </div>
         </>
