@@ -18,6 +18,25 @@ export function presetDaSessao(sessao: CronometroSessao, presets: CronometroPres
 
 const STORAGE_KEY = 'onda-cronometro-sessao-v1';
 
+/** Durações oferecidas na sessão rápida, em minutos de foco. */
+export const DURACOES_RAPIDAS = [15, 25, 45, 60, 90];
+
+// Última configuração da sessão rápida — enfeite local, não precisa sincronizar.
+const RAPIDA_KEY = 'onda-sessao-rapida-v1';
+export type ConfigRapida = { minutos: number; pausas: boolean };
+
+export function lerSessaoRapida(): ConfigRapida {
+  try {
+    const v = JSON.parse(localStorage.getItem(RAPIDA_KEY) ?? '');
+    if (typeof v?.minutos === 'number' && typeof v?.pausas === 'boolean') return v;
+  } catch { /* sem nada guardado */ }
+  return { minutos: 25, pausas: false };
+}
+
+export function guardarSessaoRapida(config: ConfigRapida) {
+  try { localStorage.setItem(RAPIDA_KEY, JSON.stringify(config)); } catch { /* sem armazenamento */ }
+}
+
 /**
  * Sessão ativa de cronômetro. Guarda só o instante em que a fase atual termina (não um
  * contador que precisa de tick pra ser correto) — assim o tempo restante fica certo mesmo

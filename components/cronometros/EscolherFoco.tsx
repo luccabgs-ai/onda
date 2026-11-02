@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { AlvoFoco, CronometroFase, CronometroPreset, Habito, Project, Task } from '@/lib/types';
 import { duracaoTotalMin } from '@/lib/cronometrosStore';
 import { formatarMinutos, fasesDaSessaoRapida, POMODORO_DESCANSO_MIN } from '@/lib/focoStore';
+import { DURACOES_RAPIDAS, lerSessaoRapida, guardarSessaoRapida } from '@/lib/cronometroSessaoStore';
 import { tinta } from '@/components/organizacao/estilo';
 
 interface Props {
@@ -19,17 +20,6 @@ interface Props {
 }
 
 const LIVRE = 'livre';
-const DURACOES_RAPIDAS = [15, 25, 45, 60, 90];
-// Última configuração da sessão rápida — enfeite local, não precisa sincronizar.
-const RAPIDA_KEY = 'onda-sessao-rapida-v1';
-
-function lerRapida(): { minutos: number; pausas: boolean } {
-  try {
-    const v = JSON.parse(localStorage.getItem(RAPIDA_KEY) ?? '');
-    if (typeof v?.minutos === 'number' && typeof v?.pausas === 'boolean') return v;
-  } catch { /* sem nada guardado */ }
-  return { minutos: 25, pausas: false };
-}
 
 /**
  * "No que você vai focar?" — antes de começar um cronômetro. Sugere o que já está em andamento,
@@ -52,7 +42,7 @@ export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, v
   const [busca, setBusca] = useState('');
   const [habitoId, setHabitoId] = useState<string | null>(preset?.habitoId ?? null);
   const [todosHabitos, setTodosHabitos] = useState(false);
-  const [config, setConfig] = useState(lerRapida);
+  const [config, setConfig] = useState(lerSessaoRapida);
 
   // Hábitos sugeridos: os de hoje ainda não feitos (e o já escolhido); o resto sob "outros".
   const diaSemana = new Date(`${hoje}T12:00:00`).getDay();
@@ -69,7 +59,7 @@ export default function EscolherFoco({ preset, tasks, projects, habitos, hoje, v
   const mudarConfig = (mudanca: Partial<typeof config>) => {
     const nova = { ...config, ...mudanca };
     setConfig(nova);
-    try { localStorage.setItem(RAPIDA_KEY, JSON.stringify(nova)); } catch { /* sem armazenamento */ }
+    guardarSessaoRapida(nova);
   };
 
   const projeto = (t: Task) => projects.find(p => p.id === t.projectId);
