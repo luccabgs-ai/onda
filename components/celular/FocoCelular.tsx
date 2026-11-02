@@ -1,12 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { AlvoFoco, CronometroPreset } from '@/lib/types';
+import { AlvoFoco, CronometroFase, CronometroPreset, Habito } from '@/lib/types';
 import { AREAS } from '@/lib/data';
 import { useCronometrosStore, duracaoTotalMin } from '@/lib/cronometrosStore';
-import { useCronometroSessao, presetDaSessao } from '@/lib/cronometroSessaoStore';
+import { useCronometroSessao, presetDaSessao, DURACOES_RAPIDAS, lerSessaoRapida, guardarSessaoRapida } from '@/lib/cronometroSessaoStore';
 import { useHabitsStore } from '@/lib/habitsStore';
 import { useProjectsStore } from '@/lib/projectsStore';
-import { useFocoStore, formatarMinutos, somaMinutos, MINIMO_MIN_BLOCO_INTERROMPIDO } from '@/lib/focoStore';
+import { useFocoStore, formatarMinutos, somaMinutos, MINIMO_MIN_BLOCO_INTERROMPIDO, habitoDaSessao, fasesDaSessaoRapida, POMODORO_DESCANSO_MIN } from '@/lib/focoStore';
 import { toDateStr } from '@/lib/nutricao';
 import { BotoesContador, formatarValor } from '@/components/projetos/ProgressoTarefa';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -128,10 +128,15 @@ function Relogio({ preset, sessaoStore, nomeHabito, alvo, onPular, onEncerrar }:
 }
 
 /** Fim da sessão no celular: quanto foi e em quê, "o que avançou?" e concluir a tarefa ou mexer no contador. */
-function FimDeFoco({ focoStore, projectsStore }: Pick<Props, 'focoStore' | 'projectsStore'>) {
+function FimDeFoco({ focoStore, projectsStore, habitsStore }: Pick<Props, 'focoStore' | 'projectsStore' | 'habitsStore'>) {
   const [nota, setNota] = useState('');
   const [concluir, setConcluir] = useState(false);
+  const [marcarHabito, setMarcarHabito] = useState(true);
+  const [hoje] = useState(() => toDateStr(new Date()));
   const aAnotar = focoStore.aAnotar!;
+  // Hábito ligado: no fim natural já foi marcado; encerrada cedo, vem oferecido.
+  const habito = aAnotar.habitoId ? habitsStore.habitos.find(h => h.id === aAnotar.habitoId) : undefined;
+  const habitoFeito = !!habito?.votos[hoje];
   const blocos = focoStore.blocosDaSessao(aAnotar.sessaoId);
   const ultimo = blocos[blocos.length - 1];
   const task = ultimo?.taskId ? projectsStore.tasks.find(t => t.id === ultimo.taskId) : undefined;
@@ -140,6 +145,7 @@ function FimDeFoco({ focoStore, projectsStore }: Pick<Props, 'focoStore' | 'proj
   const guardar = (comNota: boolean) => {
     if (comNota && nota.trim()) focoStore.anotar(ultimo.id, nota.trim());
     if (concluir && task) projectsStore.moveTask(task.id, 'concluido');
+    if (habito && !habitoFeito && marcarHabito) habitsStore.completarHabito(habito.id);
     focoStore.dispensarAnotacao();
   };
   const mensuravel = task && task.valorAlvo !== undefined;
@@ -167,6 +173,14 @@ function FimDeFoco({ focoStore, projectsStore }: Pick<Props, 'focoStore' | 'proj
           <Checkbox checked={concluir} size={20} /> Concluir a tarefa
         </div>
       )}
+      {habito && (habitoFeito ? (
+        <p style={{ fontSize: 13, color: 'var(--moss)', margin: '10px 0 0' }}>✓ “{habito.acao}” marcado como feito hoje</p>
+      ) : (
+        // A linha inteira alterna; o Checkbox fica sem onChange.
+        <div onClick={() => setMarcarHabito(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, padding: '10px 12px', borderRadius: 10, border: '1px solid var(--card-border)', cursor: 'pointer', fontSize: 14, textAlign: 'left' }}>
+          <Checkbox checked={marcarHabito} size={20} /> Marcar “{habito.acao}” como feito hoje
+        </div>
+      ))}
       <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
         <button onClick={() => guardar(false)} style={{ ...botaoContorno, flex: 1 }}>Pular</button>
         <button onClick={() => guardar(true)} style={{ ...botaoCheio, flex: 2 }}>Guardar</button>
@@ -175,26 +189,87 @@ function FimDeFoco({ focoStore, projectsStore }: Pick<Props, 'focoStore' | 'proj
   );
 }
 
-/** "No que você vai focar?" antes de começar um cronômetro — tarefa ou foco livre. */
-function EscolherAlvo({ preset, projectsStore, onComecar, onFechar }: {
-  preset: CronometroPreset;
+const pilula = (ativo: boolean, cor = 'var(--ink)') => ({
+  minHeight: 36, padding: '6px 13px', borderRadius: 18, fontSize: 13.5,
+  border: `1px solid ${ativo ? cor : tinta(18)}`, background: ativo ? cor : 'transparent',
+  color: ativo ? 'var(--washi)' : 'var(--char-soft)',
+});
+
+/**
+ * "No que você vai focar?" antes de começar — tarefa ou foco livre, e o hábito que a sessão
+ * conclui no fim. Sem `preset` é a sessão rápida: escolhe também o tempo e se tem pausas.
+ */
+function EscolherAlvo({ preset, projectsStore, habitos, onComecar, onFechar }: {
+  preset?: CronometroPreset;
   projectsStore: Props['projectsStore'];
-  onComecar: (alvo: AlvoFoco) => void;
+  habitos: Habito[];
+  onComecar: (alvo: AlvoFoco, fases?: CronometroFase[]) => void;
   onFechar: () => void;
 }) {
   const [rotulo, setRotulo] = useState('');
   const [hoje] = useState(() => toDateStr(new Date()));
+  const [habitoId, setHabitoId] = useState<string | null>(preset?.habitoId ?? null);
+  const [config, setConfig] = useState(lerSessaoRapida);
   const { tasks, projects } = projectsStore;
+  const fases = preset ? undefined : fasesDaSessaoRapida(config.minutos, config.pausas);
+  const focos = fases?.filter(f => f.tipo === 'foco').map(f => f.minutos) ?? [];
+  const mudarConfig = (mudanca: Partial<typeof config>) => {
+    const nova = { ...config, ...mudanca };
+    setConfig(nova);
+    guardarSessaoRapida(nova);
+  };
+  const comecar = (alvo: AlvoFoco) => onComecar({ ...alvo, habitoId }, fases);
+  // Hábitos de hoje ainda não feitos (e o já escolhido).
+  const dia = new Date(`${hoje}T12:00:00`).getDay();
+  const habitosHoje = habitos.filter(h => (h.diasSemana.includes(dia) && !h.votos[hoje]) || h.id === habitoId);
   const abertas = tasks.filter(t => t.status !== 'concluido')
     .sort((a, b) => Number(b.status === 'em_andamento') - Number(a.status === 'em_andamento')
       || Number(!!b.dueDate && b.dueDate <= hoje) - Number(!!a.dueDate && a.dueDate <= hoje));
   return (
-    <Folha sobre={`${preset.nome} · ${duracao(duracaoTotalMin(preset.fases))}`} titulo="No que você vai focar?" onFechar={onFechar}>
+    <Folha
+      sobre={preset ? `${preset.nome} · ${duracao(duracaoTotalMin(preset.fases))}` : 'sessão rápida · não vira cronômetro'}
+      titulo={preset ? 'No que você vai focar?' : 'Quanto tempo, e no quê?'}
+      onFechar={onFechar}
+    >
       <div style={{ display: 'flex', gap: 8 }}>
-        <input value={rotulo} onChange={e => setRotulo(e.target.value)} placeholder="foco livre: estudar, e-mails…"
+        <input value={rotulo} onChange={e => setRotulo(e.target.value)}
+          placeholder={habitoId ? `nome (opcional): fica “${habitos.find(h => h.id === habitoId)?.acao ?? ''}”` : 'foco livre: estudar, e-mails…'}
           style={{ flex: 1, minWidth: 0, padding: '10px 12px', borderRadius: 10, border: `1px solid ${tinta(18)}`, background: 'var(--card-bg)', fontSize: 16 }} />
-        <button onClick={() => onComecar({ rotulo })} style={botaoContorno}>livre</button>
+        <button onClick={() => comecar({ rotulo })} style={preset ? botaoContorno : { ...botaoContorno, background: 'var(--ink)', color: 'var(--washi)', borderColor: 'var(--ink)' }}>
+          {preset ? 'livre' : `▶ ${duracao(config.minutos)}`}
+        </button>
       </div>
+      {!preset && (
+        <>
+          <div style={{ ...kicker, margin: '14px 0 6px' }}>tempo de foco</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {[...DURACOES_RAPIDAS, 120].map(m => (
+              <button key={m} onClick={() => mudarConfig({ minutos: m })} style={pilula(config.minutos === m)}>{duracao(m)}</button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'inline-flex', gap: 6 }}>
+              <button onClick={() => mudarConfig({ pausas: false })} style={pilula(!config.pausas)}>direto</button>
+              <button onClick={() => mudarConfig({ pausas: true })} style={pilula(config.pausas)}>com pausas</button>
+            </div>
+            <span style={{ fontSize: 12, color: 'var(--char-mute)' }}>
+              {focos.length > 1 ? `${focos.join(' + ')} min, ${POMODORO_DESCANSO_MIN} de pausa entre eles` : config.pausas ? 'até 25 min não tem pausa' : 'um bloco só'}
+            </span>
+          </div>
+        </>
+      )}
+      {habitosHoje.length > 0 && (
+        <>
+          <div style={{ ...kicker, margin: '14px 0 6px' }}>ao terminar, concluir o hábito</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {habitosHoje.map(h => (
+              <button key={h.id} onClick={() => setHabitoId(habitoId === h.id ? null : h.id)} style={pilula(habitoId === h.id, 'var(--moss)')}>
+                {habitoId === h.id && '✓ '}{h.acao}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       <div style={{ ...kicker, margin: '14px 0 6px' }}>tarefas</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {abertas.slice(0, 12).map(t => {
@@ -202,7 +277,7 @@ function EscolherAlvo({ preset, projectsStore, onComecar, onFechar }: {
           return (
             <OpcaoFolha key={t.id} cor={p?.color} texto={t.title}
               detalhe={t.status === 'em_andamento' ? 'fazendo' : t.dueDate && t.dueDate <= hoje ? 'prazo' : p?.title}
-              onClick={() => onComecar({ taskId: t.id })} />
+              onClick={() => comecar({ taskId: t.id })} />
           );
         })}
         {abertas.length === 0 && <Vazio>Nenhuma tarefa aberta. Use o foco livre.</Vazio>}
@@ -213,30 +288,34 @@ function EscolherAlvo({ preset, projectsStore, onComecar, onFechar }: {
 
 export default function FocoCelular({ cronometrosStore, sessaoStore, habitsStore, projectsStore, focoStore }: Props) {
   const { presets, loaded } = cronometrosStore;
-  const { sessao, iniciar, avancarFase, parar } = sessaoStore;
+  const { sessao, iniciar, iniciarAvulso, avancarFase, parar } = sessaoStore;
   const { tasks, projects } = projectsStore;
-  const [escolhendo, setEscolhendo] = useState<CronometroPreset | null>(null);
+  const { habitos } = habitsStore;
+  // O cronômetro escolhido, esperando "no que você vai focar?"; 'rapida' = sessão rápida.
+  const [escolhendo, setEscolhendo] = useState<CronometroPreset | 'rapida' | null>(null);
   // presetDaSessao: também acha a sessão avulsa de um bloco do calendário.
   const ativo = sessao ? presetDaSessao(sessao, presets) : undefined;
-  const nomeHabito = (p?: CronometroPreset) => p?.habitoId ? habitsStore.habitos.find(h => h.id === p.habitoId)?.acao : undefined;
+  const nomeHabito = (id?: string) => id ? habitos.find(h => h.id === id)?.acao : undefined;
+  const habitoAtivo = sessao && ativo ? habitoDaSessao(sessao, ativo) : undefined;
   const ordenados = [...presets].sort((a, b) => Number(!!b.pronto) - Number(!!a.pronto));
 
   const alvoDaSessao = () => {
     const t = sessao?.taskId ? tasks.find(x => x.id === sessao.taskId) : undefined;
     const p = t ? projects.find(x => x.id === t.projectId) : undefined;
-    return t ? { titulo: t.title, projeto: p?.title, cor: p?.color } : { titulo: sessao?.rotulo || 'Foco livre' };
+    return t ? { titulo: t.title, projeto: p?.title, cor: p?.color } : { titulo: sessao?.rotulo || nomeHabito(habitoAtivo) || 'Foco livre' };
   };
   // Pular ou encerrar no meio de um foco grava o tempo feito (se passou de 5 min), como no PC.
   const pular = () => {
     if (!sessao || !ativo) return;
-    focoStore.registrarFaseAtual({ sessao, preset: ativo, cheia: false, tasks, projects });
+    focoStore.registrarFaseAtual({ sessao, preset: ativo, cheia: false, tasks, projects, habitos });
     avancarFase(ativo);
   };
   const encerrar = () => {
     if (!sessao || !ativo) return;
-    const bloco = focoStore.registrarFaseAtual({ sessao, preset: ativo, cheia: false, tasks, projects });
+    const bloco = focoStore.registrarFaseAtual({ sessao, preset: ativo, cheia: false, tasks, projects, habitos });
     const jaTinha = sessao.sessaoId ? focoStore.blocosDaSessao(sessao.sessaoId).length > 0 : false;
-    if (sessao.sessaoId && (bloco || jaTinha)) focoStore.pedirAnotacao(sessao.sessaoId, true);
+    // Encerrar cedo não conclui o hábito sozinho: o fim oferece, já marcado.
+    if (sessao.sessaoId && (bloco || jaTinha)) focoStore.pedirAnotacao(sessao.sessaoId, true, habitoAtivo);
     parar();
   };
 
@@ -244,15 +323,27 @@ export default function FocoCelular({ cronometrosStore, sessaoStore, habitsStore
     <div>
       <Cabecalho sobre="cronômetro" titulo="Foco" />
 
-      {!sessao && focoStore.aAnotar && <FimDeFoco key={focoStore.aAnotar.sessaoId} focoStore={focoStore} projectsStore={projectsStore} />}
-      {ativo && <Relogio preset={ativo} sessaoStore={sessaoStore} nomeHabito={nomeHabito(ativo)} alvo={alvoDaSessao()} onPular={pular} onEncerrar={encerrar} />}
+      {!sessao && focoStore.aAnotar && <FimDeFoco key={focoStore.aAnotar.sessaoId} focoStore={focoStore} projectsStore={projectsStore} habitsStore={habitsStore} />}
+      {ativo && <Relogio preset={ativo} sessaoStore={sessaoStore} nomeHabito={nomeHabito(habitoAtivo)} alvo={alvoDaSessao()} onPular={pular} onEncerrar={encerrar} />}
 
       <Secao titulo={ativo ? 'outros blocos' : 'começar um bloco'} primeira={!ativo}>
+        {!sessao && (
+          <button onClick={() => setEscolhendo('rapida')} style={{
+            ...cartao, width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8,
+            background: 'var(--ink)', borderColor: 'var(--ink)', color: 'var(--washi)',
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="serif" style={{ fontSize: 19, lineHeight: 1.2 }}>Sessão rápida</div>
+              <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>escolha o tempo e comece · não fica salva</div>
+            </div>
+            <span style={{ fontSize: 18 }}>▶</span>
+          </button>
+        )}
         {!loaded ? <Vazio>carregando…</Vazio> : ordenados.length === 0 ? <Vazio>Nenhum cronômetro ainda.</Vazio> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {ordenados.map(p => {
               const cor = AREAS.find(a => a.id === p.areaId)?.color ?? 'var(--ink)';
-              const habito = nomeHabito(p);
+              const habito = nomeHabito(p.habitoId);
               const bloqueado = !!sessao;
               return (
                 <button
@@ -283,10 +374,15 @@ export default function FocoCelular({ cronometrosStore, sessaoStore, habitsStore
 
       {escolhendo && (
         <EscolherAlvo
-          preset={escolhendo}
+          preset={escolhendo === 'rapida' ? undefined : escolhendo}
           projectsStore={projectsStore}
+          habitos={habitos}
           onFechar={() => setEscolhendo(null)}
-          onComecar={alvo => { iniciar(escolhendo, alvo); setEscolhendo(null); }}
+          onComecar={(alvo, fases) => {
+            if (escolhendo !== 'rapida') iniciar(escolhendo, alvo);
+            else if (fases) iniciarAvulso('Sessão rápida', fases, alvo);
+            setEscolhendo(null);
+          }}
         />
       )}
     </div>
