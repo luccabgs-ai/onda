@@ -36,8 +36,8 @@ export function fasesDaSessaoRapida(minutos: number, pausas: boolean): Cronometr
 }
 
 /**
- * O hábito que a sessão conclui no fim: o escolhido na hora (null = nenhum) ou, em sessão
- * começada sem escolher, o vinculado ao cronômetro.
+ * O hábito que a sessão conclui no fim: o escolhido como foco (null = focou em outra coisa) ou,
+ * em sessão começada sem escolher, o vinculado ao cronômetro.
  */
 export function habitoDaSessao(sessao: CronometroSessao, preset: CronometroPreset): string | undefined {
   return sessao.habitoId === undefined ? preset.habitoId : sessao.habitoId ?? undefined;
@@ -61,8 +61,8 @@ export function minutosFeitosNaFase(sessao: CronometroSessao, preset: Cronometro
 }
 
 /**
- * Monta a linha do bloco, copiando título, projeto e área da tarefa naquele momento. Sem
- * tarefa, um hábito ligado à sessão dá o nome (se o foco livre não tiver um) e a área.
+ * Monta a linha do bloco, copiando título, projeto e área da tarefa naquele momento. Foco num
+ * hábito leva o nome e a área do hábito.
  */
 export function montarBloco(params: {
   sessao: CronometroSessao;
