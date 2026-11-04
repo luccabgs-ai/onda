@@ -8,7 +8,8 @@ atrás de uma senha só (sem contas de usuário).
 
 Telas: **Hoje** (painel do dia), **Áreas**, **Objetivos** (+ metas), **Organização** (ciclos
 de semana/mês/semestre/ano), **Projetos** (quadro kanban por projeto), **Calendário**,
-**Hábitos**, **Cronômetros** e **Ritual** (check-in da manhã e check-out da noite).
+**Hábitos** e **Cronômetros**. O ritual (check-in da manhã e check-out da noite) não tem
+página própria no PC: abre por cima da Hoje.
 
 No **celular** (tela até 768px) o app é outro: 5 abas — **Hoje** (três momentos do dia),
 **Agenda** (dia/semana/mês com plano × feito), **Foco** (cronômetro), **Projetos** e **Rumo**

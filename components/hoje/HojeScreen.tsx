@@ -21,6 +21,7 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Card } from '@/components/ui/Card';
 import { IcCheck, IcEdit, IcCalendar2, IcAlert } from '@/components/ui/icons';
 import PrioridadeSlotEditor from '@/components/ritual/PrioridadeSlotEditor';
+import RitualForm, { RitualRespostas } from '@/components/ritual/RitualForm';
 
 type HabitsStore = ReturnType<typeof useHabitsStore>;
 
@@ -32,7 +33,6 @@ interface HojeScreenProps {
   objetivosStore: ReturnType<typeof useObjetivosStore>;
   calendarStore: ReturnType<typeof useCalendarStore>;
   rituaisStore: ReturnType<typeof useRituaisStore>;
-  onIrParaRitual: () => void;
   onIrParaObjetivos: () => void;
   onAbrirProjeto: (project: Project) => void;
   minutosFocoHoje?: number;   // tempo de foco gravado hoje pelo cronômetro
@@ -168,10 +168,10 @@ const NightWaveBg = () => (
 interface CheckInCardProps {
   isEvening: boolean;
   feito: boolean;          // o ritual correspondente (manhã ou noite) já foi registrado hoje?
-  onIrParaRitual: () => void;
+  onAbrirRitual: () => void;
 }
 
-const CheckInCard = ({ isEvening, feito, onIrParaRitual }: CheckInCardProps) => (
+const CheckInCard = ({ isEvening, feito, onAbrirRitual }: CheckInCardProps) => (
   <Card style={{ padding: '20px', position: 'relative', overflow: 'hidden' }}>
     {isEvening && <NightWaveBg />}
     <div style={{ position: 'relative', zIndex: 1 }}>
@@ -194,7 +194,7 @@ const CheckInCard = ({ isEvening, feito, onIrParaRitual }: CheckInCardProps) => 
               : 'Três perguntas rápidas pra entrar no dia com clareza.'}
           </p>
           <button
-            onClick={onIrParaRitual}
+            onClick={onAbrirRitual}
             style={{
               padding: '8px 16px',
               background: 'var(--ink)',
@@ -251,11 +251,13 @@ const StreakSummaryInline = ({ habitos }: StreakCardProps) => {
   );
 };
 
-export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsStore, objetivosStore, calendarStore, rituaisStore, onIrParaRitual, onIrParaObjetivos, onAbrirProjeto, minutosFocoHoje = 0 }: HojeScreenProps) {
+export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsStore, objetivosStore, calendarStore, rituaisStore, onIrParaObjetivos, onAbrirProjeto, minutosFocoHoje = 0 }: HojeScreenProps) {
   const [hoveredHabitoId, setHoveredHabitoId] = useState<string | null>(null);
   const [editingSlotIndex, setEditingSlotIndex] = useState<number | null>(null);
   const [editingSlotDraft, setEditingSlotDraft] = useState<PrioridadeRitual | null>(null);
   const [hoveredPrioridadeId, setHoveredPrioridadeId] = useState<string | null>(null);
+  // O ritual abre aqui mesmo, por cima da tela — não há mais página própria.
+  const [ritualAberto, setRitualAberto] = useState<'morning' | 'evening' | null>(null);
 
   const { habitos, votar } = habitsStore;
   const { projects, tasks, moveTask } = projectsStore;
@@ -420,7 +422,7 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
           </div>
         ) : (
           <button
-            onClick={onIrParaRitual}
+            onClick={() => setRitualAberto('morning')}
             style={{ paddingLeft: 16, borderLeft: '2.5px solid rgba(27,54,93,0.25)', textAlign: 'left', cursor: 'pointer' }}
           >
             <div style={{
@@ -644,7 +646,7 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
                   Suas 3 prioridades de hoje nascem no ritual da manhã.
                 </p>
                 <button
-                  onClick={onIrParaRitual}
+                  onClick={() => setRitualAberto('morning')}
                   style={{ padding: '7px 14px', background: 'var(--ink)', color: 'var(--washi)', borderRadius: 5, fontSize: 12, fontWeight: 500 }}
                 >
                   Fazer o ritual da manhã
@@ -907,9 +909,25 @@ export default function HojeScreen({ dataExtensa, hour, habitsStore, projectsSto
         <CheckInCard
           isEvening={isEvening}
           feito={isEvening ? !!registroNoite : !!registroManha}
-          onIrParaRitual={onIrParaRitual}
+          onAbrirRitual={() => setRitualAberto(isEvening ? 'evening' : 'morning')}
         />
       </div>
+
+      {ritualAberto && (
+        <RitualForm
+          kind={ritualAberto}
+          onClose={() => setRitualAberto(null)}
+          onSubmit={(respostas: RitualRespostas) => {
+            rituaisStore.salvarRitual({ data: hojeStr, tipo: ritualAberto === 'morning' ? 'manha' : 'noite', ...respostas });
+            setRitualAberto(null);
+          }}
+          hoje={hojeStr}
+          eventos={events}
+          tasks={tasks}
+          projects={projects}
+          habitos={habitos}
+        />
+      )}
     </div>
   );
 }

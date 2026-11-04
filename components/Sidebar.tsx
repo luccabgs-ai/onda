@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { Hanko } from './ui/Hanko';
-import { IcSun, IcMoon, IcCompass, IcLeaf, IcKanban, IcCalendar2, IcHabito, IcTimer, IcTarget, IcFlag } from './ui/icons';
+import { IcSun, IcMoon, IcCompass, IcKanban, IcCalendar2, IcHabito, IcTimer, IcTarget, IcFlag } from './ui/icons';
 
 interface NavItem {
   id: string;
@@ -17,7 +17,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'organizacao', label: 'Organização', jp: '節目', icon: IcFlag },
   { id: 'projetos', label: 'Projetos', jp: '企画', icon: IcKanban },
   { id: 'calendario', label: 'Calendário', jp: '暦', icon: IcCalendar2 },
-  { id: 'ritual', label: 'Ritual', jp: '儀式', icon: IcLeaf },
   { id: 'habitos', label: 'Hábitos', jp: '習慣', icon: IcHabito },
   { id: 'cronometros', label: 'Cronômetros', jp: '集中', icon: IcTimer },
 ];
