@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import Sidebar from '@/components/Sidebar';
 import HojeScreen from '@/components/hoje/HojeScreen';
 import AreasScreen from '@/components/areas/AreasScreen';
-import RitualScreen from '@/components/ritual/RitualScreen';
 import ProjetosScreen from '@/components/projetos/ProjetosScreen';
 import ProjectDetail from '@/components/projetos/ProjectDetail';
 import CalendarioScreen from '@/components/calendario/CalendarioScreen';
@@ -167,7 +166,6 @@ export default function Home() {
           <HojeScreen
             dataExtensa={dataExtensa}
             rituaisStore={rituaisStore}
-            onIrParaRitual={() => setScreen('ritual')}
             onIrParaObjetivos={() => setScreen('objetivos')}
             onAbrirProjeto={(project) => { setActiveProject(project); setScreen('projetos'); }}
             minutosFocoHoje={somaMinutos(blocosDoDia(focoStore.sessoes, hojeStr))}
@@ -221,9 +219,6 @@ export default function Home() {
             sessaoRodando={!!cronometroSessao.sessao}
             onComecarFoco={comecarBlocoDoCalendario}
           />
-        )}
-        {screen === 'ritual'      && (
-          <RitualScreen habitsStore={habitsStore} rituaisStore={rituaisStore} projectsStore={store} calendarStore={calendarStore} />
         )}
         {screen === 'habitos'     && <HabitosScreen store={habitsStore} />}
         {screen === 'cronometros' && (

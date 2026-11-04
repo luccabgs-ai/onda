@@ -8,7 +8,8 @@ atrás de uma senha só (sem contas de usuário).
 
 Telas: **Hoje** (painel do dia), **Áreas**, **Objetivos** (+ metas), **Organização** (ciclos
 de semana/mês/semestre/ano), **Projetos** (quadro kanban por projeto), **Calendário**,
-**Hábitos**, **Cronômetros** e **Ritual** (check-in da manhã e check-out da noite).
+**Hábitos** e **Cronômetros**. O ritual (check-in da manhã e check-out da noite) não tem
+página própria no PC: abre por cima da Hoje.
 
 ## Stack
 
