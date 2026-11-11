@@ -131,9 +131,10 @@ Next.js 16 (App Router) · React 19 · TypeScript estrito · Supabase (Postgres)
    login fica em `APP_PASSWORD`, no `.env.local` (pergunte ao Lucca; não a escreva em arquivo
    versionado). Testes e arquivos temporários vão pro diretório de scratchpad, nunca pro repo.
 5. Commit em português, descrevendo o efeito pro usuário e não o arquivo mexido.
-6. `git push origin main`, depois **sempre** `git checkout mobile-bottom-nav` + `git merge main`,
-   validar de novo, `git push origin mobile-bottom-nav`, voltar pra `main`. A `mobile-bottom-nav`
-   é o preview mobile e tem classes próprias (`mobile-screen`, `mobile-grid-1col`…) — ao
-   resolver conflito, mantenha a classe dela **e** o código novo.
+6. `git push origin main`, depois **sempre** `git checkout celular` + `git merge main`, validar de
+   novo, `git push origin celular`, voltar pra `main`. A `celular` é o app de celular em teste
+   (`components/celular/`, 5 abas), que o Lucca usa pelo preview da Vercel e ainda não foi pra
+   `main` — ao resolver conflito, mantenha o que é dela **e** o código novo. A antiga
+   `mobile-bottom-nav` está aposentada.
 7. Não há ferramenta de navegador nesta máquina. Se a mudança for visual, diga claramente que
    não foi conferida na tela.
