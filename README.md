@@ -8,6 +8,8 @@ o meu tempo.
 A estética é japonesa (papel washi, tinta azul, selo hanko) e o app é todo em português. Ele
 roda na Vercel, atrás de uma senha única, porque o único usuário sou eu.
 
+![Tela Hoje: hábitos do dia, a Bússola das áreas, uma observação sobre a área negligenciada e as prioridades](docs/hoje.png)
+
 ## O que ele faz
 
 - **Hoje.** É o painel do dia: as 3 prioridades, os eventos, os hábitos ordenados por urgência
