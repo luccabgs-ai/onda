@@ -6,13 +6,6 @@ export interface Area {
   color: string;
   angle: number;
   nutrido: number;
-  objetivo: string;
-  ultima: string;
-  habitos: number;
-  projetos: number;
-  streakDias: number;
-  projects?: { name: string; status: string; due: string; progress: number }[];
-  notas?: { date: string; text: string }[];
 }
 
 /** De onde vem uma das 3 prioridades do dia, escolhida no ritual da manhã. */

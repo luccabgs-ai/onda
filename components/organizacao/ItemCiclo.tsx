@@ -56,7 +56,7 @@ export function ItemForm({ tipo, inicial, areaInicial, onSalvar, onCancelar }: {
         value={titulo}
         onChange={e => setTitulo(e.target.value)}
         onKeyDown={onKeyDown}
-        placeholder={tipo === 'meta' ? 'ex: entregar o relatório da Boreal' : 'ex: horas de sono por noite'}
+        placeholder={tipo === 'meta' ? 'ex: entregar o relatório do trimestre' : 'ex: horas de sono por noite'}
         style={{ ...campoStyle, padding: '8px 10px' }}
       />
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
