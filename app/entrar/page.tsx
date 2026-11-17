@@ -4,13 +4,13 @@ import { Hanko } from '@/components/ui/Hanko';
 
 export default function EntrarPage() {
   const [senha, setSenha] = useState('');
-  const [erro, setErro] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
   const entrar = async () => {
     if (!senha.trim() || enviando) return;
     setEnviando(true);
-    setErro(false);
+    setErro(null);
     try {
       const r = await fetch('/api/auth/login', {
         method: 'POST',
@@ -21,9 +21,9 @@ export default function EntrarPage() {
         window.location.href = '/';
         return;
       }
-      setErro(true);
+      setErro(r.status === 429 ? 'muitas tentativas — espere alguns minutos' : 'senha incorreta');
     } catch {
-      setErro(true);
+      setErro('senha incorreta');
     }
     setEnviando(false);
   };
@@ -57,7 +57,7 @@ export default function EntrarPage() {
           autoFocus
           value={senha}
           placeholder="senha"
-          onChange={e => { setSenha(e.target.value); setErro(false); }}
+          onChange={e => { setSenha(e.target.value); setErro(null); }}
           onKeyDown={e => { if (e.key === 'Enter') entrar(); }}
           style={{
             width: '100%',
@@ -90,7 +90,7 @@ export default function EntrarPage() {
         </button>
         {erro && (
           <div style={{ fontSize: 12, color: 'var(--hanko)', textAlign: 'center' }}>
-            senha incorreta
+            {erro}
           </div>
         )}
       </div>
